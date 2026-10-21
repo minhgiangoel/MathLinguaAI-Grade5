@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ch4-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#05256a"/>
+      <stop offset="50%" stop-color="#08523b"/>
+      <stop offset="100%" stop-color="#031847"/>
+    </linearGradient>
+    <linearGradient id="ch4-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00a86b"/><stop offset="100%" stop-color="#005e3e"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#ch4-bg)"/>
+
+  <!-- Back Button -->
+  <g transform="translate(10.8, 78.4)">
+    <rect width="162" height="43.4" rx="22" fill="#ffffff" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="81" y="26" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#005e3e" text-anchor="middle">‹ Back to Topics</text>
+  </g>
+
+  <!-- Banner Title -->
+  <g transform="translate(200, 60)" font-family="'Be Vietnam Pro', sans-serif">
+    <text font-size="30" font-weight="900" fill="#ffffff">CHAPTER 4: GEOMETRY &amp; MEASUREMENT</text>
+    <text y="28" font-size="16" font-weight="700" fill="#ffd65e">Chủ đề Hình học &amp; Đo lường</text>
+  </g>
+
+  <!-- Row 0: 4 lessons (y=255.5) -->
+  <g transform="translate(9.6, 255.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">1. Hectare &amp; Square Km</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Héc-ta &amp; Km²</text>
+  </g>
+  <g transform="translate(309.6, 255.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">2. Area of Triangle</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Diện tích tam giác</text>
+  </g>
+  <g transform="translate(609.6, 255.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">3. Trapezium &amp; Area</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Hình thang &amp; diện tích</text>
+  </g>
+  <g transform="translate(909.6, 255.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">4. Circle &amp; Area</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Chu vi &amp; DT hình tròn</text>
+  </g>
+
+  <!-- Row 1: 4 lessons (y=343) -->
+  <g transform="translate(9.6, 343)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">5. Nets of Solid</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Hình khai triển khối</text>
+  </g>
+  <g transform="translate(309.6, 343)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">6. Surface Area</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Diện tích xung quanh / TP</text>
+  </g>
+  <g transform="translate(609.6, 343)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">7. Units of Volume</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Đơn vị đo thể tích</text>
+  </g>
+  <g transform="translate(909.6, 343)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">8. Volume of Cuboid &amp; Cube</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Thể tích HHCN &amp; HLP</text>
+  </g>
+
+  <!-- Row 2: 4 lessons (y=430.5) -->
+  <g transform="translate(9.6, 430.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">9. Time (+ / -)</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Cộng trừ đo thời gian</text>
+  </g>
+  <g transform="translate(309.6, 430.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">10. Time (* / /)</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Nhân chia đo thời gian</text>
+  </g>
+  <g transform="translate(609.6, 430.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">11. Speed</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Vận tốc</text>
+  </g>
+  <g transform="translate(909.6, 430.5)">
+    <rect width="282" height="80.5" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">12. Speed, Time, Distance</text>
+    <text x="14" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Công thức s, v, t</text>
+  </g>
+
+  <!-- Row 4: Lesson 13 (y=602) -->
+  <g transform="translate(9.6, 602)">
+    <rect width="282" height="84" rx="14" fill="url(#ch4-card)" stroke="#6ef0bd" stroke-width="2"/>
+    <text x="14" y="34" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffffff">13. Pie Chart</text>
+    <text x="14" y="54" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="12" fill="#ffd65e">Biểu đồ hình quạt tròn</text>
+  </g>
+</svg>

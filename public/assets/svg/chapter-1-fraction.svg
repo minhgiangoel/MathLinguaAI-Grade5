@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ch1-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#05256a"/>
+      <stop offset="50%" stop-color="#093a9c"/>
+      <stop offset="100%" stop-color="#031847"/>
+    </linearGradient>
+    <linearGradient id="unit-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1466e3"/><stop offset="100%" stop-color="#08388f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#ch1-bg)"/>
+
+  <!-- Back to Topics Library Button Graphic area (x=14.4, y=81.9, w=162, h=44.8) -->
+  <g transform="translate(14.4, 81.9)">
+    <rect width="162" height="44.8" rx="22" fill="#ffffff" stroke="#8beeff" stroke-width="2"/>
+    <text x="81" y="27" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#073a9c" text-anchor="middle">‹ Back to Topics</text>
+  </g>
+
+  <!-- Chapter Banner Title -->
+  <g transform="translate(220, 80)" font-family="'Be Vietnam Pro', sans-serif">
+    <text font-size="34" font-weight="900" fill="#ffffff">CHAPTER 1: FRACTIONS</text>
+    <text y="32" font-size="20" font-weight="700" fill="#ffd65e">Chủ đề Phân số &amp; Hỗn số</text>
+    <text y="62" font-size="15" fill="#c3e4ff">Khám phá khái niệm hỗn số và chuyển đổi phân số thập phân.</text>
+  </g>
+
+  <!-- Illustration Artwork -->
+  <g transform="translate(300, 210)">
+    <circle cx="120" cy="90" r="75" fill="#0b419e"/>
+    <path d="M 120 90 L 120 15 A 75 75 0 0 1 195 90 Z" fill="#ffd65e"/>
+    <text x="120" y="100" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="28" fill="#ffffff" text-anchor="middle">2 ¾</text>
+    <text x="380" y="90" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="42" fill="#8beeff" text-anchor="middle">7 / 10</text>
+  </g>
+
+  <!-- Lesson Card 1: Mixed Numbers (x=192, y=434, w=300, h=105) -->
+  <g transform="translate(192, 434)">
+    <rect width="300" height="105" rx="18" fill="url(#unit-card)" stroke="#8beeff" stroke-width="2"/>
+    <text x="25" y="42" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="20" fill="#ffffff">1. Mixed Numbers</text>
+    <text x="25" y="68" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="16" fill="#ffd65e">Hỗn số</text>
+    <text x="25" y="90" font-family="'Be Vietnam Pro', sans-serif" font-size="12" fill="#c3e4ff">▶ Bấm để xem bài học &amp; luyện tập</text>
+  </g>
+
+  <!-- Lesson Card 2: Decimal Fractions (x=504, y=434, w=324, h=105) -->
+  <g transform="translate(504, 434)">
+    <rect width="324" height="105" rx="18" fill="url(#unit-card)" stroke="#8beeff" stroke-width="2"/>
+    <text x="25" y="42" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="20" fill="#ffffff">2. Decimal Fractions</text>
+    <text x="25" y="68" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="16" fill="#ffd65e">Phân số thập phân</text>
+    <text x="25" y="90" font-family="'Be Vietnam Pro', sans-serif" font-size="12" fill="#c3e4ff">▶ Bấm để xem bài học &amp; luyện tập</text>
+  </g>
+</svg>

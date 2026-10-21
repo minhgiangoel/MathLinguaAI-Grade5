@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isTeacher() {
+      return isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/teachers/$(request.auth.uid)));
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isTeacher());
+      allow list: if isTeacher();
+      allow create: if isValidId(userId) && isOwner(userId)
+                    && incoming().keys().hasAll(['uid', 'username', 'displayName', 'role'])
+                    && incoming().uid == request.auth.uid
+                    && (incoming().role == 'student' || isAdmin());
+      allow update: if isValidId(userId) && (
+                      (isOwner(userId) && incoming().uid == request.auth.uid && incoming().role == existing().role)
+                      || isAdmin()
+                    );
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Admins Whitelist
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && isSignedIn();
+      allow list: if isAdmin();
+      allow write: if isValidId(userId) && isAdmin();
+    }
+
+    // Teachers Whitelist
+    match /teachers/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isTeacher();
+      allow write: if isValidId(userId) && isAdmin();
+    }
+
+    // Progress Collection
+    match /progress/{progressId} {
+      allow get: if isValidId(progressId) && (isOwner(resource.data.userId) || isTeacher());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isTeacher());
+      allow create: if isValidId(progressId) && isSignedIn()
+                    && incoming().userId == request.auth.uid
+                    && incoming().keys().hasAll(['userId', 'topicId', 'unitId', 'status']);
+      allow update: if isValidId(progressId) && isSignedIn()
+                    && existing().userId == request.auth.uid
+                    && incoming().userId == request.auth.uid;
+      allow delete: if isValidId(progressId) && isAdmin();
+    }
+
+    // Learning Materials & Curriculum Bank
+    match /learningMaterials/{materialId} {
+      allow get: if isValidId(materialId) && (resource.data.status == 'published' || isTeacher());
+      allow list: if resource.data.status == 'published' || isTeacher();
+      allow create, update, delete: if isValidId(materialId) && isTeacher();
+    }
+  }
+}

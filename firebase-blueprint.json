@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile document containing role, display name, class and avatar information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique Firebase Auth user ID" },
+        "username": { "type": "string", "description": "Alphanumeric unique username" },
+        "displayName": { "type": "string", "description": "Display name of the student or teacher" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"], "description": "User role in the system" },
+        "grade": { "type": "string", "description": "School grade level, e.g. Grade 5" },
+        "classId": { "type": "string", "description": "Class identifier, e.g. 5A1" },
+        "avatarUrl": { "type": "string", "description": "Avatar preset or custom image identifier" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "displayName", "role"]
+    },
+    "AdminRef": {
+      "title": "Admin Reference Document",
+      "description": "Existence of document grants administrator privileges.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "grantedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid"]
+    },
+    "TeacherRef": {
+      "title": "Teacher Reference Document",
+      "description": "Existence of document grants teacher privileges.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "assignedClasses": { "type": "array" }
+      },
+      "required": ["uid"]
+    },
+    "StudentProgress": {
+      "title": "Student Progress Record",
+      "description": "Learning progress, quiz answers, scores and completion status per unit or game.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the student" },
+        "topicId": { "type": "string", "description": "Topic or chapter identifier" },
+        "unitId": { "type": "string", "description": "Unit or game identifier" },
+        "titleEn": { "type": "string", "description": "English title of the lesson/game" },
+        "titleVi": { "type": "string", "description": "Vietnamese title of the lesson/game" },
+        "status": { "type": "string", "enum": ["not_started", "in_progress", "completed"], "description": "Completion state" },
+        "score": { "type": "number", "description": "Quiz or activity score out of 100" },
+        "attempts": { "type": "number", "description": "Number of times attempted" },
+        "lastChoice": { "type": "number", "description": "Index of last selected choice" },
+        "isCorrect": { "type": "boolean", "description": "Whether the last answer was correct" },
+        "skills": { "type": "array", "description": "Array of skill keywords" },
+        "vocabPracticed": { "type": "array", "description": "Array of practiced vocabulary terms" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "lastStudiedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "topicId", "unitId", "status"]
+    },
+    "LearningMaterial": {
+      "title": "Curated Learning Material",
+      "description": "Curated or teacher-created lessons, vocabulary, and questions.",
+      "type": "object",
+      "properties": {
+        "topicId": { "type": "string" },
+        "unitId": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "titleVi": { "type": "string" },
+        "summary": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "authorId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["topicId", "unitId", "titleEn", "titleVi", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile documents keyed by Firebase Auth UID."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRef" },
+      "description": "Admin identity whitelist documents."
+    },
+    "/teachers/{userId}": {
+      "schema": { "$ref": "#/entities/TeacherRef" },
+      "description": "Teacher identity whitelist documents."
+    },
+    "/progress/{progressId}": {
+      "schema": { "$ref": "#/entities/StudentProgress" },
+      "description": "Student progress documents keyed by userId_unitId."
+    },
+    "/learningMaterials/{materialId}": {
+      "schema": { "$ref": "#/entities/LearningMaterial" },
+      "description": "Customizable learning materials and questions."
+    }
+  }
+}

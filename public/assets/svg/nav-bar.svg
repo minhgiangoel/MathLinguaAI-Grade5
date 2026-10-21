@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="nav-bg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#041b4b"/>
+      <stop offset="30%" stop-color="#07327e"/>
+      <stop offset="70%" stop-color="#06296b"/>
+      <stop offset="100%" stop-color="#03163e"/>
+    </linearGradient>
+    <linearGradient id="logo-glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8beeff"/>
+      <stop offset="100%" stop-color="#176ff0"/>
+    </linearGradient>
+    <linearGradient id="login-btn-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd65e"/>
+      <stop offset="100%" stop-color="#f0ab00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Navigation Bar Background -->
+  <rect width="1200" height="100" fill="url(#nav-bg)"/>
+  <line x1="0" y1="99" x2="1200" y2="99" stroke="#1d66db" stroke-width="2"/>
+
+  <!-- Logo Brand Section -->
+  <g transform="translate(20, 18)">
+    <rect x="0" y="0" width="60" height="64" rx="16" fill="#0b419c" stroke="url(#logo-glow)" stroke-width="2"/>
+    <!-- Cute 3D Cube Icon -->
+    <path d="M30 12 L50 22 L30 32 L10 22 Z" fill="#60c5ff"/>
+    <path d="M10 22 L30 32 L30 52 L10 42 Z" fill="#2586f5"/>
+    <path d="M50 22 L30 32 L30 52 L50 42 Z" fill="#1360c7"/>
+    <text x="75" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="22" fill="#ffffff">MathLingua <tspan fill="#8beeff">AI</tspan></text>
+    <text x="75" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="13" fill="#ffd65e">GRADE 5 · TOÁN SONG NGỮ</text>
+  </g>
+
+  <!-- Tab Labels Artwork in Background (Hotspots render interactive active plates above) -->
+  <g font-family="'Be Vietnam Pro', sans-serif" font-weight="800" text-anchor="middle" fill="#d0e6ff">
+    <!-- Home Tab Area -->
+    <g transform="translate(384, 50)">
+      <text y="-8" font-size="20">🏠</text>
+      <text y="12" font-size="13" fill="#ffffff">Home</text>
+      <text y="26" font-size="10" fill="#a0c8f5" font-weight="600">Trang chủ</text>
+    </g>
+
+    <!-- Topics Library Area -->
+    <g transform="translate(517, 50)">
+      <text y="-8" font-size="20">📚</text>
+      <text y="12" font-size="13" fill="#ffffff">Topics Library</text>
+      <text y="26" font-size="10" fill="#a0c8f5" font-weight="600">Thư viện chủ đề</text>
+    </g>
+
+    <!-- Math Lab Area -->
+    <g transform="translate(650, 50)">
+      <text y="-8" font-size="20">🧪</text>
+      <text y="12" font-size="13" fill="#ffffff">Math Lab</text>
+      <text y="26" font-size="10" fill="#a0c8f5" font-weight="600">Vui học Toán</text>
+    </g>
+
+    <!-- MathBuddy AI Area -->
+    <g transform="translate(782, 50)">
+      <text y="-8" font-size="20">🤖</text>
+      <text y="12" font-size="13" fill="#ffffff">MathBuddy AI</text>
+      <text y="26" font-size="10" fill="#a0c8f5" font-weight="600">Trợ lí Toán học</text>
+    </g>
+
+    <!-- My Progress Area -->
+    <g transform="translate(917, 50)">
+      <text y="-8" font-size="20">📊</text>
+      <text y="12" font-size="13" fill="#ffffff">My Progress</text>
+      <text y="26" font-size="10" fill="#a0c8f5" font-weight="600">Hồ sơ tiến bộ</text>
+    </g>
+  </g>
+
+  <!-- Login Button Art Area -->
+  <g transform="translate(1000, 18)">
+    <rect x="0" y="0" width="180" height="64" rx="20" fill="url(#login-btn-bg)" stroke="#ffffff" stroke-width="2"/>
+    <text x="90" y="38" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="16" fill="#07327e" text-anchor="middle">🔑 LOG IN / ĐĂNG NHẬP</text>
+  </g>
+</svg>

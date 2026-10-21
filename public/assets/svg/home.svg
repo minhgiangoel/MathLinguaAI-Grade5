@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <radialGradient id="home-space" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#0b388f"/>
+      <stop offset="50%" stop-color="#06225e"/>
+      <stop offset="100%" stop-color="#031133"/>
+    </radialGradient>
+    <linearGradient id="hero-gold-btn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe875"/>
+      <stop offset="100%" stop-color="#f5b000"/>
+    </linearGradient>
+    <filter id="glow-light" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Cosmic Background -->
+  <rect width="1200" height="700" fill="url(#home-space)"/>
+
+  <!-- Decorative Stars & Floating Math Elements -->
+  <g fill="#ffffff" opacity="0.6">
+    <circle cx="150" cy="120" r="2"/><circle cx="320" cy="80" r="3"/><circle cx="950" cy="140" r="2.5"/>
+    <circle cx="1080" cy="280" r="2"/><circle cx="80" cy="450" r="3"/><circle cx="1120" cy="550" r="2"/>
+  </g>
+
+  <!-- Math & Geometry Floating Illustrations -->
+  <g opacity="0.25" stroke="#8beeff" stroke-width="2" fill="none">
+    <circle cx="200" cy="260" r="60"/>
+    <path d="M 200 200 L 200 320 M 140 260 L 260 260"/>
+    <polygon points="1000,180 1060,280 940,280"/>
+    <rect x="120" y="480" width="80" height="80" rx="10"/>
+    <text x="920" y="480" font-size="70" font-family="sans-serif" fill="#ffd65e" stroke="none">π</text>
+    <text x="220" y="140" font-size="50" font-family="sans-serif" fill="#8beeff" stroke="none">%</text>
+  </g>
+
+  <!-- Hero Mascot Robot / Space Station Artwork -->
+  <g transform="translate(180, 80)">
+    <!-- Planet/Base platform -->
+    <ellipse cx="420" cy="240" rx="280" ry="80" fill="#0c4abf" opacity="0.4"/>
+    <!-- Robot / Space Shuttle mascot -->
+    <g transform="translate(340, 60)">
+      <circle cx="80" cy="80" r="70" fill="#1363e0" stroke="#8beeff" stroke-width="4"/>
+      <rect x="35" y="55" width="90" height="50" rx="20" fill="#041b4b"/>
+      <circle cx="55" cy="80" r="12" fill="#8beeff"/>
+      <circle cx="105" cy="80" r="12" fill="#8beeff"/>
+      <path d="M 65 100 Q 80 115 95 100" stroke="#ffd65e" stroke-width="4" fill="none"/>
+      <path d="M 80 10 L 80 -15" stroke="#8beeff" stroke-width="4"/>
+      <circle cx="80" cy="-20" r="8" fill="#ffd65e"/>
+    </g>
+  </g>
+
+  <!-- Hero Title Text -->
+  <g text-anchor="middle" font-family="'Be Vietnam Pro', sans-serif">
+    <text x="600" y="320" font-size="46" font-weight="900" fill="#ffffff" filter="url(#glow-light)">MathLingua AI · Grade 5</text>
+    <text x="600" y="370" font-size="24" font-weight="700" fill="#8beeff">HỌC TOÁN SONG NGỮ THÔNG MINH &amp; THÚ VỊ</text>
+    <text x="600" y="405" font-size="16" font-weight="500" fill="#c3e4ff">Khám phá phân số, số thập phân, hình học và từ vựng Toán Tiếng Anh cùng MathBuddy!</text>
+
+    <!-- Start Journey Button Background (x=0.495 = 594, y=0.645 = 451.5, w=0.265 = 318, h=0.105 = 73.5) -->
+    <g transform="translate(435, 451.5)">
+      <rect width="330" height="73.5" rx="36" fill="url(#hero-gold-btn)" stroke="#ffffff" stroke-width="3" filter="url(#glow-light)"/>
+      <text x="165" y="34" font-size="18" font-weight="900" fill="#052769">BẮT ĐẦU HÀNH TRÌNH</text>
+      <text x="165" y="54" font-size="13" font-weight="800" fill="#08388f">START YOUR JOURNEY 🚀</text>
+    </g>
+  </g>
+</svg>

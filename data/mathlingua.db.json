@@ -1,0 +1,165 @@
+{
+  "users": [
+    {
+      "id": "admin_8c9ff476",
+      "username": "admin",
+      "displayName": "Quản trị viên / Administrator",
+      "role": "admin",
+      "grade": "Grade 5",
+      "classId": "Admin Office",
+      "avatarUrl": "admin",
+      "passwordHash": "b277cb088e293dc95c8a5907ae503e9065b85b90fbcc375ba64c5a9d9eb7b18a29507114fbc790380429dabfaf83f08e66988a4fbb46e8580c758da3919f2334",
+      "passwordSalt": "5a2ed748f894a97f13d7cfb0190b3321",
+      "createdAt": "2026-10-21T16:00:00.571Z",
+      "updatedAt": "2026-10-21T17:08:02.915Z"
+    },
+    {
+      "id": "user_de1560cc-c",
+      "username": "an_lop5",
+      "displayName": "Lê Minh An",
+      "role": "student",
+      "grade": "Grade 5",
+      "classId": "5A1",
+      "avatarUrl": "astronaut-1",
+      "passwordHash": "db77599842e45eb60339cdde60dc7f8eecc3ea3c1b56400ea05ba04c49467ad26b9ca204d35efe48247451ceb7894a7f783690c375cea18a24a9e957aa4dce3f",
+      "passwordSalt": "858c553f8447c9a9b1d2db671e078acb",
+      "createdAt": "2026-10-21T16:01:58.369Z",
+      "updatedAt": "2026-10-21T16:01:58.369Z"
+    },
+    {
+      "id": "user_5fbc469e-1",
+      "username": "bao_lop5",
+      "displayName": "Lê Gia Bảo",
+      "role": "student",
+      "grade": "Grade 5",
+      "classId": "5A2",
+      "avatarUrl": "astronaut-2",
+      "passwordHash": "2b8fbf25499d43d462031d7ed61c63c69e7f579a0e5b81e1a1b3e75f4599e846de7c901b95042c80011b6156837b20baa81dfddb56947197d76b3a72c1b9efb1",
+      "passwordSalt": "c8fd95d8e2f3696a12de76df11a797b0",
+      "createdAt": "2026-10-21T16:39:17.022Z",
+      "updatedAt": "2026-10-21T16:39:24.193Z"
+    },
+    {
+      "id": "user_d49e6169-d",
+      "username": "nam_lop5a",
+      "displayName": "Lê Hoàng Nam",
+      "role": "student",
+      "grade": "Grade 5",
+      "classId": "5A1",
+      "avatarUrl": "astronaut-1",
+      "passwordHash": "a99e5e00afdc74bfada7e8b60df801dc6272c9436420872cfbffbeccaafd0eae02753cf1f1211356284a360ea4a0aa778d93abfb6fb44089ec98a3c8c2460c1b",
+      "passwordSalt": "3ec46fad4361d9b4dbedafc650202f76",
+      "createdAt": "2026-10-21T17:35:35.641Z",
+      "updatedAt": "2026-10-21T17:35:35.641Z"
+    }
+  ],
+  "sessions": [
+    {
+      "token": "7f0735ee5c404946d834e2994a3f4a830d0bab7b4e761e54b94425e83eac7a38",
+      "userId": "user_de1560cc-c",
+      "createdAt": "2026-10-21T16:01:58.370Z",
+      "expiresAt": "2026-10-28T16:01:58.370Z"
+    },
+    {
+      "token": "d6f2d0da59a895e7789993d38ef95c83eb8c038870331d17fbcdcc20f3ab649c",
+      "userId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T16:02:32.764Z",
+      "expiresAt": "2026-10-28T16:02:32.764Z"
+    },
+    {
+      "token": "29a514fb4208bbce6553a2d410a9839826f2edb75a82b174403f5f6bef3d74c2",
+      "userId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T16:03:07.090Z",
+      "expiresAt": "2026-10-28T16:03:07.090Z"
+    },
+    {
+      "token": "3e472eeab5d3bc71ab8d90e9da64cb6edb1f257d989b112f8ce7a3a15388718c",
+      "userId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T16:39:00.938Z",
+      "expiresAt": "2026-10-28T16:39:00.938Z"
+    },
+    {
+      "token": "db52171926b85445db93d030a8be40693d97ea04f46515ce51ccbc151bd4606f",
+      "userId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T16:39:08.345Z",
+      "expiresAt": "2026-10-28T16:39:08.345Z"
+    },
+    {
+      "token": "353410cd996e42c69f6d113acdb1d0d7399ca6b7d66d54c40306dbbf591ff30f",
+      "userId": "user_5fbc469e-1",
+      "createdAt": "2026-10-21T16:39:17.022Z",
+      "expiresAt": "2026-10-28T16:39:17.022Z"
+    },
+    {
+      "token": "15f496f9a1387c81d03b9378f5e324b7b67a22f5d2bf8b55d76de468981b5c96",
+      "userId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T16:39:24.180Z",
+      "expiresAt": "2026-10-28T16:39:24.180Z"
+    },
+    {
+      "token": "27a75fe88ac4f9940d31ac1c7a39495681bb5604227bf7bf2f53bd901ca1d80c",
+      "userId": "user_5fbc469e-1",
+      "createdAt": "2026-10-21T16:39:34.754Z",
+      "expiresAt": "2026-10-28T16:39:34.754Z"
+    },
+    {
+      "token": "d39e17ea80d1910b26f457d862ded5bd177e8f01c4c844646706e617ca112c07",
+      "userId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T17:14:07.047Z",
+      "expiresAt": "2026-10-28T17:14:07.047Z"
+    },
+    {
+      "token": "b6b4803ebde22215905cc1b20075db17829002d5cc1169639074b6428836cb45",
+      "userId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T17:14:46.213Z",
+      "expiresAt": "2026-10-28T17:14:46.213Z"
+    },
+    {
+      "token": "204a5d577776a9aa6716f2e5048dfe28fc84dd0c28576d87d8b2267efba282b7",
+      "userId": "user_d49e6169-d",
+      "createdAt": "2026-10-21T17:35:35.641Z",
+      "expiresAt": "2026-10-28T17:35:35.641Z"
+    }
+  ],
+  "progress": [
+    {
+      "id": "user_de1560cc-c_chapter4_triangle",
+      "userId": "user_de1560cc-c",
+      "topicId": "chapter4",
+      "unitId": "triangle",
+      "titleEn": "Area of Triangle",
+      "titleVi": "Diện tích hình tam giác",
+      "status": "completed",
+      "score": 100,
+      "attempts": 1,
+      "isCorrect": true,
+      "lastChoice": null,
+      "skills": [
+        "Geometry",
+        "Triangle Area"
+      ],
+      "vocabPracticed": [
+        "base",
+        "height"
+      ],
+      "startedAt": "2026-10-21T16:02:04.017Z",
+      "completedAt": "2026-10-21T16:02:04.017Z",
+      "lastStudiedAt": "2026-10-21T16:02:04.017Z",
+      "updatedAt": "2026-10-21T16:02:04.017Z"
+    }
+  ],
+  "learningMaterials": [
+    {
+      "id": "mat_d24c1461",
+      "topicId": "chapter4",
+      "unitId": "trapezium-advance",
+      "titleEn": "Advanced Trapezium Area",
+      "titleVi": "Diện tích hình thang nâng cao",
+      "summary": "S = (a + b) x h : 2",
+      "status": "published",
+      "authorId": "admin_8c9ff476",
+      "createdAt": "2026-10-21T16:02:56.509Z",
+      "updatedAt": "2026-10-21T16:02:56.509Z"
+    }
+  ]
+}

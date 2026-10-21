@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <linearGradient id="prog-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#041a4a"/>
+      <stop offset="50%" stop-color="#072e79"/>
+      <stop offset="100%" stop-color="#021236"/>
+    </linearGradient>
+    <linearGradient id="review-btn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe875"/><stop offset="100%" stop-color="#f5b000"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#prog-bg)"/>
+
+  <!-- Page Header -->
+  <g transform="translate(40, 45)" font-family="'Be Vietnam Pro', sans-serif">
+    <text font-size="32" font-weight="900" fill="#ffffff">MY PROGRESS <tspan fill="#8beeff">/ Hồ Sơ Tiến Bộ</tspan></text>
+    <text y="28" font-size="16" fill="#b8dcff">Theo dõi kết quả rèn luyện kĩ năng Toán học và tiếng Anh của bạn!</text>
+  </g>
+
+  <!-- Progress Overview Cards -->
+  <g transform="translate(40, 120)">
+    <rect width="1120" height="170" rx="20" fill="#062668" stroke="#3cbcff" stroke-width="2"/>
+    <text x="30" y="45" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="22" fill="#ffffff">🏆 Thống kê học tập tuần này</text>
+    <g transform="translate(30, 75)" font-family="'Be Vietnam Pro', sans-serif">
+      <text font-weight="900" font-size="28" fill="#ffd65e">12 / 15</text>
+      <text y="22" font-size="13" fill="#b8dcff">Bài học đã hoàn thành</text>
+    </g>
+    <g transform="translate(320, 75)" font-family="'Be Vietnam Pro', sans-serif">
+      <text font-weight="900" font-size="28" fill="#6ef0bd">92%</text>
+      <text y="22" font-size="13" fill="#b8dcff">Tỉ lệ chính xác</text>
+    </g>
+    <g transform="translate(580, 75)" font-family="'Be Vietnam Pro', sans-serif">
+      <text font-weight="900" font-size="28" fill="#8beeff">45 từ</text>
+      <text y="22" font-size="13" fill="#b8dcff">Từ vựng Toán Tiếng Anh</text>
+    </g>
+    <g transform="translate(850, 75)" font-family="'Be Vietnam Pro', sans-serif">
+      <text font-weight="900" font-size="28" fill="#ff9f7d">🔥 5 ngày</text>
+      <text y="22" font-size="13" fill="#b8dcff">Chuỗi học liên tục</text>
+    </g>
+  </g>
+
+  <!-- Detailed Tabs Area -->
+  <!-- Math Skills Button (x=372, y=318.5, w=288, h=52.5) -->
+  <g transform="translate(372, 318.5)">
+    <rect width="288" height="52.5" rx="16" fill="#0c4abf" stroke="#8beeff" stroke-width="2"/>
+    <text x="144" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="17" fill="#ffffff" text-anchor="middle">📐 Math Skills / Kỹ năng Toán</text>
+  </g>
+
+  <!-- English Math Button (x=960, y=318.5, w=204, h=52.5) -->
+  <g transform="translate(960, 318.5)">
+    <rect width="204" height="52.5" rx="16" fill="#0c4abf" stroke="#8beeff" stroke-width="2"/>
+    <text x="102" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="16" fill="#ffffff" text-anchor="middle">🇬🇧 English Math</text>
+  </g>
+
+  <!-- Detailed Skills Display Card -->
+  <g transform="translate(40, 395)">
+    <rect width="1120" height="200" rx="20" fill="#06225b" stroke="#1d66db" stroke-width="2"/>
+    <text x="30" y="40" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="18" fill="#ffffff">Báo cáo mức độ thành thạo:</text>
+
+    <!-- Skill Bar 1 -->
+    <text x="30" y="80" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="14" fill="#d0e7ff">Phân số &amp; Hỗn số (Fractions &amp; Mixed Numbers)</text>
+    <rect x="400" y="65" width="500" height="20" rx="10" fill="#021030"/>
+    <rect x="400" y="65" width="450" height="20" rx="10" fill="#6ef0bd"/>
+    <text x="915" y="81" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#6ef0bd">90%</text>
+
+    <!-- Skill Bar 2 -->
+    <text x="30" y="120" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="14" fill="#d0e7ff">Số thập phân (Decimal Numbers)</text>
+    <rect x="400" y="105" width="500" height="20" rx="10" fill="#021030"/>
+    <rect x="400" y="105" width="410" height="20" rx="10" fill="#8beeff"/>
+    <text x="915" y="121" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#8beeff">82%</text>
+
+    <!-- Skill Bar 3 -->
+    <text x="30" y="160" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="14" fill="#d0e7ff">Hình học &amp; Đo lường (Geometry &amp; Measurement)</text>
+    <rect x="400" y="145" width="500" height="20" rx="10" fill="#021030"/>
+    <rect x="400" y="145" width="375" height="20" rx="10" fill="#ffd65e"/>
+    <text x="915" y="161" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#ffd65e">75%</text>
+  </g>
+
+  <!-- Review Now Button (x=780, y=612.5, w=324, h=66.5) -->
+  <g transform="translate(780, 612.5)">
+    <rect width="324" height="66.5" rx="20" fill="url(#review-btn)" stroke="#ffffff" stroke-width="2"/>
+    <text x="162" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="18" fill="#052769" text-anchor="middle">⚡ ÔN TẬP NGAY</text>
+    <text x="162" y="50" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="12" fill="#08388f" text-anchor="middle">REVIEW NOW</text>
+  </g>
+</svg>

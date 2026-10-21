@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <linearGradient id="buddy-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#041a4a"/>
+      <stop offset="50%" stop-color="#072d78"/>
+      <stop offset="100%" stop-color="#021133"/>
+    </linearGradient>
+    <linearGradient id="vocab-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e4abb"/>
+      <stop offset="100%" stop-color="#062d7a"/>
+    </linearGradient>
+    <linearGradient id="practice-card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#buddy-bg)"/>
+
+  <!-- Page Header -->
+  <g transform="translate(40, 45)" font-family="'Be Vietnam Pro', sans-serif">
+    <text font-size="32" font-weight="900" fill="#ffffff">MATHBUDDY AI <tspan fill="#8beeff">/ Trợ Lí Toán Học</tspan></text>
+    <text y="28" font-size="16" fill="#b8dcff">Luyện từ vựng, câu mẫu và giao tiếp Toán học bằng Tiếng Anh chuẩn xác!</text>
+  </g>
+
+  <!-- Left AI Robot Assistant Mascot -->
+  <g transform="translate(40, 140)">
+    <rect width="220" height="420" rx="24" fill="#062463" stroke="#8beeff" stroke-width="2"/>
+    <circle cx="110" cy="110" r="60" fill="#1467e3"/>
+    <rect x="70" y="85" width="80" height="45" rx="15" fill="#03153b"/>
+    <circle cx="88" cy="108" r="10" fill="#8beeff"/>
+    <circle cx="132" cy="108" r="10" fill="#8beeff"/>
+    <text x="110" y="210" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="20" fill="#ffffff" text-anchor="middle">MathBuddy 🤖</text>
+    <text x="110" y="240" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="14" fill="#ffd65e" text-anchor="middle">Sẵn sàng học cùng bạn!</text>
+    <text x="110" y="280" font-family="'Be Vietnam Pro', sans-serif" font-size="13" fill="#b8dcff" text-anchor="middle">"Hello! Let's practice</text>
+    <text x="110" y="300" font-family="'Be Vietnam Pro', sans-serif" font-size="13" fill="#b8dcff" text-anchor="middle">Math in English!"</text>
+  </g>
+
+  <!-- Vocab Cards Grid -->
+  <!-- Geometry: x=294, y=140, w=138, h=210 -->
+  <g transform="translate(294, 140)">
+    <rect width="138" height="210" rx="16" fill="url(#vocab-card)" stroke="#58a6ff" stroke-width="2"/>
+    <text x="69" y="50" font-size="36" text-anchor="middle">📐</text>
+    <text x="69" y="105" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="15" fill="#ffffff" text-anchor="middle">Geometry</text>
+    <text x="69" y="130" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="13" fill="#ffd65e" text-anchor="middle">Hình học</text>
+    <text x="69" y="170" font-family="'Be Vietnam Pro', sans-serif" font-size="11" fill="#8beeff" text-anchor="middle">🔊 Click to view</text>
+  </g>
+
+  <!-- Measurement: x=432, y=140, w=138, h=210 -->
+  <g transform="translate(432, 140)">
+    <rect width="138" height="210" rx="16" fill="url(#vocab-card)" stroke="#58a6ff" stroke-width="2"/>
+    <text x="69" y="50" font-size="36" text-anchor="middle">📏</text>
+    <text x="69" y="105" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="14" fill="#ffffff" text-anchor="middle">Measurement</text>
+    <text x="69" y="130" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="13" fill="#ffd65e" text-anchor="middle">Đo lường</text>
+    <text x="69" y="170" font-family="'Be Vietnam Pro', sans-serif" font-size="11" fill="#8beeff" text-anchor="middle">🔊 Click to view</text>
+  </g>
+
+  <!-- Decimal Numbers: x=570, y=140, w=144, h=210 -->
+  <g transform="translate(570, 140)">
+    <rect width="144" height="210" rx="16" fill="url(#vocab-card)" stroke="#58a6ff" stroke-width="2"/>
+    <text x="72" y="50" font-size="36" text-anchor="middle">🔢</text>
+    <text x="72" y="100" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="13" fill="#ffffff" text-anchor="middle">Decimal Numbers</text>
+    <text x="72" y="125" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="13" fill="#ffd65e" text-anchor="middle">Số thập phân</text>
+    <text x="72" y="170" font-family="'Be Vietnam Pro', sans-serif" font-size="11" fill="#8beeff" text-anchor="middle">🔊 Click to view</text>
+  </g>
+
+  <!-- Mixed Numbers: x=294, y=357, w=144, h=203 -->
+  <g transform="translate(294, 357)">
+    <rect width="144" height="203" rx="16" fill="url(#vocab-card)" stroke="#58a6ff" stroke-width="2"/>
+    <text x="72" y="48" font-size="36" text-anchor="middle">🍕</text>
+    <text x="72" y="98" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="14" fill="#ffffff" text-anchor="middle">Mixed Numbers</text>
+    <text x="72" y="122" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="13" fill="#ffd65e" text-anchor="middle">Hỗn số</text>
+    <text x="72" y="165" font-family="'Be Vietnam Pro', sans-serif" font-size="11" fill="#8beeff" text-anchor="middle">🔊 Click to view</text>
+  </g>
+
+  <!-- Ratio: x=438, y=357, w=138, h=203 -->
+  <g transform="translate(438, 357)">
+    <rect width="138" height="203" rx="16" fill="url(#vocab-card)" stroke="#58a6ff" stroke-width="2"/>
+    <text x="69" y="48" font-size="36" text-anchor="middle">⚖️</text>
+    <text x="69" y="98" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="15" fill="#ffffff" text-anchor="middle">Ratio</text>
+    <text x="69" y="122" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="13" fill="#ffd65e" text-anchor="middle">Tỉ số</text>
+    <text x="69" y="165" font-family="'Be Vietnam Pro', sans-serif" font-size="11" fill="#8beeff" text-anchor="middle">🔊 Click to view</text>
+  </g>
+
+  <!-- Others: x=576, y=357, w=144, h=203 -->
+  <g transform="translate(576, 357)">
+    <rect width="144" height="203" rx="16" fill="url(#vocab-card)" stroke="#58a6ff" stroke-width="2"/>
+    <text x="72" y="48" font-size="36" text-anchor="middle">✨</text>
+    <text x="72" y="98" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="15" fill="#ffffff" text-anchor="middle">Others</text>
+    <text x="72" y="122" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="13" fill="#ffd65e" text-anchor="middle">Khác</text>
+    <text x="72" y="165" font-family="'Be Vietnam Pro', sans-serif" font-size="11" fill="#8beeff" text-anchor="middle">🔊 Click to view</text>
+  </g>
+
+  <!-- Practice with Model Sentences: x=768, y=175, w=408, h=196 -->
+  <g transform="translate(768, 175)">
+    <rect width="408" height="196" rx="20" fill="#093582" stroke="#ffd65e" stroke-width="3"/>
+    <text x="30" y="50" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="20" fill="#ffffff">🗣️ Practice with Model Sentences</text>
+    <text x="30" y="80" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="16" fill="#ffd65e">Luyện theo câu mẫu</text>
+    <text x="30" y="115" font-family="'Be Vietnam Pro', sans-serif" font-size="14" fill="#d0e7ff">• Listen &amp; Repeat: "This is a cube."</text>
+    <text x="30" y="145" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="14" fill="#8beeff">▶ Click to start practice</text>
+  </g>
+
+  <!-- Math Dialogue: x=768, y=374.5, w=408, h=196 -->
+  <g transform="translate(768, 374.5)">
+    <rect width="408" height="196" rx="20" fill="#093582" stroke="#8beeff" stroke-width="3"/>
+    <text x="30" y="50" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="20" fill="#ffffff">💬 Math Dialogue</text>
+    <text x="30" y="80" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="16" fill="#ffd65e">Hội thoại Toán học</text>
+    <text x="30" y="115" font-family="'Be Vietnam Pro', sans-serif" font-size="14" fill="#d0e7ff">• Q: "What shape is this?" — A: "It's a pyramid."</text>
+    <text x="30" y="145" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="14" fill="#8beeff">▶ Click to start dialogue</text>
+  </g>
+</svg>

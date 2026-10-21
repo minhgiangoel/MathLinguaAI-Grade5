@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#06348c" />
+  <meta name="description" content="MathLingua AI Grade 5 — bản demo điều hướng website học Toán song ngữ." />
+  <meta property="og:title" content="MathLingua AI · Grade 5" />
+  <meta property="og:description" content="MathLingua AI Grade 5 — bản demo điều hướng website học Toán song ngữ." />
+  <title>MathLingua AI · Grade 5</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="nav-scroller" aria-label="Thanh điều hướng MathLingua AI">
+    <div id="nav-canvas" class="nav-canvas">
+      <img class="nav-image" src="/assets/common/thanh-dieu-huong.png" alt="Thanh điều hướng MathLingua AI" draggable="false" onerror="this.onerror=null; this.src='/assets/svg/nav-bar.svg';" />
+      <div id="nav-visual-overlays" class="nav-visual-overlays" aria-hidden="true"></div>
+      <nav id="nav-hotspots" class="nav-hotspots" aria-label="Điều hướng chính"></nav>
+    </div>
+  </header>
+  <main id="app-content" aria-live="polite"></main>
+  <div id="modal-root" class="modal-root" hidden></div>
+  <div class="demo-controls">
+    <div class="demo-chip" aria-hidden="true"><span class="demo-dot"></span> Bản demo giao diện · Demo prototype</div>
+    <button type="button" id="debug-toggle" class="debug-chip" title="Bật/Tắt chế độ kiểm tra viền vùng bấm (Debug Hotspots) / Ctrl+Shift+D">🎯 Debug Hotspots: <span id="debug-status">OFF</span></button>
+  </div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

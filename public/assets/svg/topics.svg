@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <linearGradient id="topics-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#051c50"/>
+      <stop offset="50%" stop-color="#082d7a"/>
+      <stop offset="100%" stop-color="#031238"/>
+    </linearGradient>
+    <linearGradient id="planet-frac" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2285ff"/>
+      <stop offset="100%" stop-color="#073a9e"/>
+    </linearGradient>
+    <linearGradient id="planet-dec" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9a3bff"/>
+      <stop offset="100%" stop-color="#410d8a"/>
+    </linearGradient>
+    <linearGradient id="planet-ratio" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff733b"/>
+      <stop offset="100%" stop-color="#a32800"/>
+    </linearGradient>
+    <linearGradient id="planet-geo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00d68f"/>
+      <stop offset="100%" stop-color="#005e3e"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#topics-bg)"/>
+
+  <!-- Page Banner Title -->
+  <g transform="translate(60, 50)" font-family="'Be Vietnam Pro', sans-serif">
+    <text font-size="32" font-weight="900" fill="#ffffff">THƯ VIỆN CHỦ ĐỀ <tspan fill="#8beeff">/ Topics Library</tspan></text>
+    <text y="28" font-size="16" fill="#b0d8ff">Chọn một chủ đề Toán lớp 5 để bắt đầu khám phá và rèn luyện!</text>
+  </g>
+
+  <!-- Topic Planet 1: Fraction (x=34.5%, y=14.5%, w=35.5%, h=31.5%) -> rect x=414, y=101.5, w=426, h=220.5 -->
+  <g transform="translate(414, 101.5)">
+    <rect width="426" height="220.5" rx="24" fill="url(#planet-frac)" stroke="#74b9ff" stroke-width="3"/>
+    <!-- Planet Art -->
+    <circle cx="80" cy="110" r="55" fill="#4fa3ff"/>
+    <!-- Fraction illustration 3/4 -->
+    <path d="M 80 110 L 80 55 A 55 55 0 0 1 135 110 Z" fill="#ffd65e"/>
+    <text x="160" y="85" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="28" fill="#ffffff">Fraction</text>
+    <text x="160" y="115" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="18" fill="#ffd65e">Phân số &amp; Hỗn số</text>
+    <text x="160" y="145" font-family="'Be Vietnam Pro', sans-serif" font-size="14" fill="#d0e7ff">• Mixed Numbers (Hỗn số)</text>
+    <text x="160" y="168" font-family="'Be Vietnam Pro', sans-serif" font-size="14" fill="#d0e7ff">• Decimal Fractions (Phân số thập phân)</text>
+  </g>
+
+  <!-- Topic Planet 2: Decimal Numbers (x=67.7%, y=13.7%, w=31%, h=34.5%) -> rect x=812.4, y=95.9, w=372, h=241.5 -->
+  <g transform="translate(812.4, 95.9)">
+    <rect width="372" height="241.5" rx="24" fill="url(#planet-dec)" stroke="#c27eff" stroke-width="3"/>
+    <circle cx="70" cy="120" r="50" fill="#7d28e0"/>
+    <text x="70" y="130" font-family="sans-serif" font-weight="900" font-size="32" fill="#ffd65e" text-anchor="middle">3.14</text>
+    <text x="140" y="75" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="24" fill="#ffffff">Decimal Numbers</text>
+    <text x="140" y="105" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="16" fill="#ffd65e">Số thập phân</text>
+    <text x="140" y="135" font-family="'Be Vietnam Pro', sans-serif" font-size="13" fill="#e8cbff">• Comparing Decimals (So sánh)</text>
+    <text x="140" y="158" font-family="'Be Vietnam Pro', sans-serif" font-size="13" fill="#e8cbff">• Measurement Decimals (Đo lường)</text>
+    <text x="140" y="181" font-family="'Be Vietnam Pro', sans-serif" font-size="13" fill="#e8cbff">• Rounding &amp; Operations (Làm tròn &amp; Phép tính)</text>
+  </g>
+
+  <!-- Topic Planet 3: Ratio & Percentage (x=36.5%, y=48%, w=32%, h=30%) -> rect x=438, y=336, w=384, h=210 -->
+  <g transform="translate(438, 336)">
+    <rect width="384" height="210" rx="24" fill="url(#planet-ratio)" stroke="#ff9f7d" stroke-width="3"/>
+    <circle cx="65" cy="105" r="45" fill="#d64000"/>
+    <text x="65" y="118" font-family="sans-serif" font-weight="900" font-size="34" fill="#ffffff" text-anchor="middle">%</text>
+    <text x="130" y="70" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="23" fill="#ffffff">Ratio &amp; Percentage</text>
+    <text x="130" y="98" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="16" fill="#ffd65e">Tỉ số &amp; Tỉ số phần trăm</text>
+    <text x="130" y="126" font-family="'Be Vietnam Pro', sans-serif" font-size="13" fill="#ffd8cb">• Ratio &amp; Word Problems (Tỉ số)</text>
+    <text x="130" y="148" font-family="'Be Vietnam Pro', sans-serif" font-size="13" fill="#ffd8cb">• Map Scale (Tỉ lệ bản đồ)</text>
+  </g>
+
+  <!-- Topic Planet 4: Geometry & Measurement (x=70%, y=48%, w=29%, h=31%) -> rect x=840, y=336, w=348, h=217 -->
+  <g transform="translate(840, 336)">
+    <rect width="348" height="217" rx="24" fill="url(#planet-geo)" stroke="#6ef0bd" stroke-width="3"/>
+    <!-- 3D Cube Icon -->
+    <g transform="translate(25, 60)">
+      <polygon points="35,10 65,25 35,40 5,25" fill="#6ef0bd"/>
+      <polygon points="5,25 35,40 35,70 5,55" fill="#00a86b"/>
+      <polygon points="65,25 35,40 35,70 65,55" fill="#008052"/>
+    </g>
+    <text x="110" y="68" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="20" fill="#ffffff">Geometry &amp; Measurement</text>
+    <text x="110" y="94" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="15" fill="#ffd65e">Hình học &amp; Đo lường</text>
+    <text x="110" y="120" font-family="'Be Vietnam Pro', sans-serif" font-size="12" fill="#d2fceb">• Hectare &amp; Square Km (Đo diện tích)</text>
+    <text x="110" y="140" font-family="'Be Vietnam Pro', sans-serif" font-size="12" fill="#d2fceb">• Triangle, Circle, Cuboid (Hình học)</text>
+    <text x="110" y="160" font-family="'Be Vietnam Pro', sans-serif" font-size="12" fill="#d2fceb">• Time, Speed, Distance (Vận tốc)</text>
+  </g>
+</svg>

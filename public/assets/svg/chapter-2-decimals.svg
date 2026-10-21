@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ch2-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#05256a"/>
+      <stop offset="50%" stop-color="#3b1180"/>
+      <stop offset="100%" stop-color="#031847"/>
+    </linearGradient>
+    <linearGradient id="ch2-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7a2bd6"/><stop offset="100%" stop-color="#3d0985"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="700" fill="url(#ch2-bg)"/>
+
+  <!-- Back Button Artwork -->
+  <g transform="translate(10.8, 78.4)">
+    <rect width="162" height="43.4" rx="22" fill="#ffffff" stroke="#c27eff" stroke-width="2"/>
+    <text x="81" y="26" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="14" fill="#3b1180" text-anchor="middle">‹ Back to Topics</text>
+  </g>
+
+  <!-- Banner Title -->
+  <g transform="translate(200, 75)" font-family="'Be Vietnam Pro', sans-serif">
+    <text font-size="32" font-weight="900" fill="#ffffff">CHAPTER 2: DECIMAL NUMBERS</text>
+    <text y="32" font-size="18" font-weight="700" fill="#ffd65e">Chủ đề Số thập phân</text>
+    <text y="58" font-size="14" fill="#e8cbff">Khám phá khái niệm, so sánh, đo lường và phép tính số thập phân.</text>
+  </g>
+
+  <!-- Middle Graphic -->
+  <g transform="translate(600, 260)" text-anchor="middle" font-family="'Be Vietnam Pro', sans-serif">
+    <text font-size="90" font-weight="900" fill="#ffd65e">12.56</text>
+    <text y="45" font-size="18" fill="#e8cbff">Hàng chục · Hàng đơn vị · Hàng phần mười · Hàng phần trăm</text>
+  </g>
+
+  <!-- 7 Lesson Cards at Bottom -->
+  <!-- Card 1 (x=6) -->
+  <g transform="translate(6, 402.5)">
+    <rect width="164.4" height="115.5" rx="14" fill="url(#ch2-card)" stroke="#c27eff" stroke-width="2"/>
+    <text x="12" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="13" fill="#ffffff">1. Decimal</text>
+    <text x="12" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="11" fill="#ffd65e">Số thập phân</text>
+  </g>
+
+  <!-- Card 2 (x=177) -->
+  <g transform="translate(177, 402.5)">
+    <rect width="164.4" height="115.5" rx="14" fill="url(#ch2-card)" stroke="#c27eff" stroke-width="2"/>
+    <text x="12" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="13" fill="#ffffff">2. Compare</text>
+    <text x="12" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="11" fill="#ffd65e">So sánh số TP</text>
+  </g>
+
+  <!-- Card 3 (x=348) -->
+  <g transform="translate(348, 402.5)">
+    <rect width="164.4" height="115.5" rx="14" fill="url(#ch2-card)" stroke="#c27eff" stroke-width="2"/>
+    <text x="12" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="13" fill="#ffffff">3. Length</text>
+    <text x="12" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="11" fill="#ffd65e">Đo độ dài</text>
+  </g>
+
+  <!-- Card 4 (x=520) -->
+  <g transform="translate(520, 402.5)">
+    <rect width="164.4" height="115.5" rx="14" fill="url(#ch2-card)" stroke="#c27eff" stroke-width="2"/>
+    <text x="12" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="13" fill="#ffffff">4. Mass</text>
+    <text x="12" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="11" fill="#ffd65e">Đo khối lượng</text>
+  </g>
+
+  <!-- Card 5 (x=691) -->
+  <g transform="translate(691, 402.5)">
+    <rect width="164.4" height="115.5" rx="14" fill="url(#ch2-card)" stroke="#c27eff" stroke-width="2"/>
+    <text x="12" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="13" fill="#ffffff">5. Area</text>
+    <text x="12" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="11" fill="#ffd65e">Đo diện tích</text>
+  </g>
+
+  <!-- Card 6 (x=862) -->
+  <g transform="translate(862, 402.5)">
+    <rect width="164.4" height="115.5" rx="14" fill="url(#ch2-card)" stroke="#c27eff" stroke-width="2"/>
+    <text x="12" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="13" fill="#ffffff">6. Rounding</text>
+    <text x="12" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="11" fill="#ffd65e">Làm tròn</text>
+  </g>
+
+  <!-- Card 7 (x=1033) -->
+  <g transform="translate(1033, 402.5)">
+    <rect width="164.4" height="115.5" rx="14" fill="url(#ch2-card)" stroke="#c27eff" stroke-width="2"/>
+    <text x="12" y="32" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="13" fill="#ffffff">7. Operations</text>
+    <text x="12" y="52" font-family="'Be Vietnam Pro', sans-serif" font-weight="700" font-size="11" fill="#ffd65e">Phép tính</text>
+  </g>
+</svg>

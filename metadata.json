@@ -1,0 +1,8 @@
+{
+  "name": "MathLingua AI · Grade 5",
+  "description": "MathLingua AI Grade 5 — bản demo điều hướng website học Toán song ngữ.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
