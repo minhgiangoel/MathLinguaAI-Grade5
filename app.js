@@ -25,7 +25,10 @@ import { renderLessonPlayerContainer } from './src/components/LessonPlayer.js';
 import { VisualLayoutEditor, applySavedPageLayout } from './src/components/VisualLayoutEditor.js';
 import { renderMixedNumbersEmbed } from './src/components/lessons/mixed-numbers/MixedNumbersEmbed.js';
 import { renderDecimalNumberEmbed } from './src/components/lessons/decimal-number/DecimalNumberEmbed.js';
+import { renderComparingDecimalNumbersEmbed } from './src/components/lessons/comparing-decimal-numbers/ComparingDecimalNumbersEmbed.js';
 import { renderMixedNumberAdventureEmbed } from './src/components/math-lab/MixedNumberAdventureEmbed.js';
+import { renderAntsFoodQuestEmbed } from './src/components/math-lab/AntsFoodQuestEmbed.js';
+import { renderMysteryPiecesEmbed } from './src/components/math-lab/MysteryPiecesEmbed.js';
 import { renderMathBuddyConversation } from './src/components/mathbuddy/MathBuddyPartner.js';
 import { renderMyProgressView } from './src/components/MyProgressView.js';
 import { recordLearningEvent } from './src/services/progressAnalytics.js';
@@ -168,6 +171,14 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
       customRender: true,
       alt: 'Phiêu lưu cùng hỗn số / Mixed Number Adventure'
     },
+    game_ants: {
+      customRender: true,
+      alt: 'Kiến tha mồi / Ants Food Quest'
+    },
+    game_mystery_pieces: {
+      customRender: true,
+      alt: 'Mảnh ghép bí ẩn / Mystery Pieces'
+    },
     buddy: {
       customRender: true,
       alt: 'MathBuddy AI — Your Personal Math Conversation Partner'
@@ -192,6 +203,10 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     lesson_decimal_number: {
       customRender: true,
       alt: 'Bài học song ngữ: Decimal Numbers / Số thập phân'
+    },
+    lesson_comparing_decimals: {
+      customRender: true,
+      alt: 'Bài học song ngữ: Comparing Decimal Numbers / So sánh các số thập phân'
     },
     lesson_mixed_numbers: {
       customRender: true,
@@ -552,6 +567,17 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     'lesson-decimal-numbers': 'lesson_decimal_number',
     'lesson_decimal_number': 'lesson_decimal_number',
     'decimal-number': 'lesson_decimal_number',
+    'topics/decimal-numbers/comparing-decimals': 'lesson_comparing_decimals',
+    'topics/decimal-numbers/comparing-decimal-numbers': 'lesson_comparing_decimals',
+    'chapter2/comparing-decimals': 'lesson_comparing_decimals',
+    'chapter2/comparing-decimal-numbers': 'lesson_comparing_decimals',
+    'lesson/comparing-decimals': 'lesson_comparing_decimals',
+    'lesson/comparing-decimal-numbers': 'lesson_comparing_decimals',
+    'lesson-comparing-decimals': 'lesson_comparing_decimals',
+    'lesson-comparing-decimal-numbers': 'lesson_comparing_decimals',
+    'lesson_comparing_decimals': 'lesson_comparing_decimals',
+    'comparing-decimals': 'lesson_comparing_decimals',
+    'comparing-decimal-numbers': 'lesson_comparing_decimals',
     'fraction': 'chapter1',
     'decimal-numbers': 'chapter2',
     'ratio-percentage': 'chapter3',
@@ -576,6 +602,19 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     'mixed-number-adventure': 'game_mixed_numbers',
     'game-mixed-numbers': 'game_mixed_numbers',
     'game_mixed_numbers': 'game_mixed_numbers',
+    'mathlab/ants-food-quest': 'game_ants',
+    'mathlab/ants': 'game_ants',
+    'ants-food-quest': 'game_ants',
+    'ants': 'game_ants',
+    'game-ants': 'game_ants',
+    'game_ants': 'game_ants',
+    'mathlab/mystery-pieces': 'game_mystery_pieces',
+    'mathlab/mystery': 'game_mystery_pieces',
+    'mathlab/pieces': 'game_mystery_pieces',
+    'mystery-pieces': 'game_mystery_pieces',
+    'mystery': 'game_mystery_pieces',
+    'game-mystery-pieces': 'game_mystery_pieces',
+    'game_mystery_pieces': 'game_mystery_pieces',
   };
 
   function currentHashRoute() {
@@ -597,6 +636,42 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     return PAGE_META[key] ? key : 'home';
   }
 
+  // Set of routes that host full-screen embedded lesson / game iframes
+  const EMBEDDED_LESSON_ROUTES = new Set([
+    'lesson_ha_km2',
+    'lesson_decimal_fractions',
+    'lesson_decimal_number',
+    'lesson_comparing_decimals',
+    'lesson_mixed_numbers',
+    'game_3d_shapes',
+    'game_mixed_numbers',
+    'game_ants',
+    'game_mystery_pieces'
+  ]);
+
+  function isEmbeddedLessonRoute(route) {
+    if (!route) return false;
+    const normalized = ROUTE_ALIASES[route] || route;
+    return EMBEDDED_LESSON_ROUTES.has(normalized);
+  }
+
+  function syncHeaderVisibility() {
+    const isEmbed = isEmbeddedLessonRoute(currentRoute);
+    document.body.classList.toggle('embedded-lesson-active', isEmbed);
+    document.documentElement.classList.toggle('embedded-lesson-active', isEmbed);
+
+    const navHeader = document.querySelector('header.nav-scroller');
+    if (navHeader) {
+      if (isEmbed) {
+        navHeader.setAttribute('hidden', '');
+        navHeader.setAttribute('aria-hidden', 'true');
+      } else {
+        navHeader.removeAttribute('hidden');
+        navHeader.removeAttribute('aria-hidden');
+      }
+    }
+  }
+
   function navigate(route, push = true) {
     const normalized = ROUTE_ALIASES[route] || route;
     const target = PAGE_META[normalized] ? normalized : 'home';
@@ -607,6 +682,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     currentRoute = target;
     isUserMenuOpen = false;
     isMobileMenuOpen = false;
+    syncHeaderVisibility();
     handleRouteMusic(target);
     renderNav();
     renderPage();
@@ -656,6 +732,11 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
   function navActiveRoute() { return routeState[currentRoute] || 'home'; }
 
   function renderNav() {
+    syncHeaderVisibility();
+    if (isEmbeddedLessonRoute(currentRoute)) {
+      return;
+    }
+
     const navImg = document.querySelector('.nav-image');
     if (navImg) {
       navImg.src = currentUserProfile
@@ -3053,15 +3134,16 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     const container = document.createElement('div');
     container.className = 'lesson-embed-container';
 
-    // 1. Single Back Arrow Navigation Toolbar (Outside of iframe)
+    // 1. Navigation Toolbar with Back button (Outside of iframe)
     const backToolbar = document.createElement('div');
     backToolbar.className = 'lesson-back-toolbar-simple';
     backToolbar.innerHTML = `
-      <button type="button" class="lesson-back-icon-btn" id="btn-back-geometry" aria-label="Back to Geometry and Measurement" title="Back to Geometry and Measurement">
+      <button type="button" class="lesson-back-text-btn" id="btn-back-geometry" aria-label="Back" title="Back">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
+        <span>Back</span>
       </button>
     `;
 
@@ -3183,12 +3265,12 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     const backToolbar = document.createElement('div');
     backToolbar.className = 'lesson-back-toolbar-simple';
     backToolbar.innerHTML = `
-      <button type="button" class="lesson-back-text-btn" id="btn-back-mathlab" aria-label="Back to Math Lab / Quay lại Math Lab" title="Back to Math Lab / Quay lại Math Lab">
+      <button type="button" class="lesson-back-text-btn" id="btn-back-mathlab" aria-label="Back" title="Back">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
-        <span>← Back to Math Lab / Quay lại Math Lab</span>
+        <span>Back</span>
       </button>
     `;
 
@@ -3309,12 +3391,12 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     const backToolbar = document.createElement('div');
     backToolbar.className = 'lesson-back-toolbar-simple';
     backToolbar.innerHTML = `
-      <button type="button" class="lesson-back-text-btn" id="btn-back-fraction-df" aria-label="Back to Fraction / Quay lại Phân số" title="Back to Fraction / Quay lại Phân số">
+      <button type="button" class="lesson-back-text-btn" id="btn-back-fraction-df" aria-label="Back" title="Back">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
-        <span>← Back to Fraction / Quay lại Phân số</span>
+        <span>Back</span>
       </button>
     `;
 
@@ -3424,6 +3506,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
   }
 
   function renderPage() {
+    syncHeaderVisibility();
     document.body.classList.toggle('is-decimal-page', currentRoute === 'chapter2');
     if (currentRoute === 'lesson_ha_km2') {
       renderSquareKilometreHectareLesson();
@@ -3437,6 +3520,10 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
       renderDecimalNumberEmbed(root, navigate);
       return;
     }
+    if (currentRoute === 'lesson_comparing_decimals') {
+      renderComparingDecimalNumbersEmbed(root, navigate);
+      return;
+    }
     if (currentRoute === 'lesson_mixed_numbers') {
       renderMixedNumbersEmbed(root, navigate);
       return;
@@ -3447,6 +3534,14 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     }
     if (currentRoute === 'game_mixed_numbers') {
       renderMixedNumberAdventureEmbed(root, navigate);
+      return;
+    }
+    if (currentRoute === 'game_ants') {
+      renderAntsFoodQuestEmbed(root, navigate);
+      return;
+    }
+    if (currentRoute === 'game_mystery_pieces') {
+      renderMysteryPiecesEmbed(root, navigate);
       return;
     }
     if (currentRoute === 'buddy') {
@@ -3637,6 +3732,10 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
             navigate('game_3d_shapes');
           } else if (g.gameKey === 'mixed') {
             navigate('game_mixed_numbers');
+          } else if (g.gameKey === 'ants') {
+            navigate('game_ants');
+          } else if (g.gameKey === 'mystery') {
+            navigate('game_mystery_pieces');
           } else {
             openGame({ game: g.gameKey, title: g.titleEn, vi: g.titleVi });
           }
@@ -3886,6 +3985,8 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
           if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
           if (u.unitKey === 'decimal-number') {
             navigate('lesson_decimal_number');
+          } else if (u.unitKey === 'comparing-decimals' || u.unitKey === 'comparing-decimal-numbers') {
+            navigate('lesson_comparing_decimals');
           } else {
             openLesson({ en: u.titleEn, vi: u.titleVi, unitKey: u.unitKey });
           }
@@ -4514,17 +4615,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
       return;
     }
     if (spec.game === 'mystery') {
-      openQuiz({
-        topicId: 'mathlab',
-        unitId: 'mystery-pieces',
-        title: spec.title || 'Mystery Pieces',
-        subtitle: spec.vi || 'Mảnh ghép bí ẩn',
-        kicker: 'Math Lab · Number Pattern & Logic Puzzle',
-        question: 'Find the mystery number: 2, 4, 8, 16, [ ? ] / Tìm số bí ẩn tiếp theo trong dãy số?',
-        choices: ['32 (Nhân 2 qua từng bước)', '24', '30', '20'],
-        correct: 0,
-        explanation: 'Rule: Multiply by 2 at each step. 16 × 2 = 32! / Quy luật: Mỗi số sau gấp 2 lần số trước. 16 × 2 = 32!'
-      });
+      navigate('game_mystery_pieces');
       return;
     }
     if (spec.game === 'dragdrop') {
@@ -4542,17 +4633,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
       return;
     }
     if (spec.game === 'challenge' || spec.game === 'ants') {
-      openQuiz({
-        topicId: 'mathlab',
-        unitId: 'ants-food-quest',
-        title: spec.title || 'Ants Food Quest',
-        subtitle: spec.vi || 'Kiến tha mồi',
-        kicker: 'Math Lab · Speed & Motion Challenge',
-        question: 'An ant carries a golden corn kernel 60 metres in 3 minutes. What is its crawling speed? / Chú kiến tha hạt bắp bò được 60 mét trong 3 phút. Vận tốc bò của chú kiến là bao nhiêu?',
-        choices: ['20 m/min (20 mét/phút)', '180 m/min (180 mét/phút)', '15 m/min (15 mét/phút)', '30 m/min (30 mét/phút)'],
-        correct: 0,
-        explanation: 'Formula: Speed = Distance : Time = 60 : 3 = 20 m/minute. / Công thức: Vận tốc = Quãng đường : Thời gian = 60 : 3 = 20 mét/phút.'
-      });
+      navigate('game_ants');
       return;
     }
     if (spec.game === 'candy') {
@@ -4591,6 +4672,9 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
       return;
     } else if (key === 'mixed-numbers' || str.includes('mixed') || str.includes('hỗn số')) {
       navigate('lesson_mixed_numbers');
+      return;
+    } else if (key === 'comparing-decimals' || key === 'comparing-decimal-numbers' || str.includes('comparing') || str.includes('so sánh')) {
+      navigate('lesson_comparing_decimals');
       return;
     } else if (key === 'decimal-number' || str.includes('decimal numbers') || str.includes('số thập phân')) {
       quiz = {
@@ -4963,6 +5047,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
 
   // Initialize
   currentRoute = currentHashRoute();
+  syncHeaderVisibility();
   initBgMusic();
   renderNav();
   renderPage();

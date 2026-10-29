@@ -18,12 +18,12 @@ export function renderMixedNumberAdventureEmbed(root, navigate) {
   const backToolbar = document.createElement('div');
   backToolbar.className = 'lesson-back-toolbar-simple';
   backToolbar.innerHTML = `
-    <button type="button" class="lesson-back-text-btn" id="btn-back-mathlab-mna" aria-label="Back to Math Lab / Quay lại Math Lab" title="Back to Math Lab / Quay lại Math Lab">
+    <button type="button" class="lesson-back-text-btn" id="btn-back-mathlab-mna" aria-label="Back" title="Back">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
-      <span>← Back to Math Lab / Quay lại Vui học Toán</span>
+      <span>Back</span>
     </button>
   `;
 

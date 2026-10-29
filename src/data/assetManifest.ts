@@ -123,14 +123,15 @@ export const ASSET_MANIFEST: AssetManifest = {
       aliasRoute: 'topics/ratio-percentage',
       titleEn: 'Ratio and Percentage',
       titleVi: 'Tỉ số và tỉ số phần trăm',
-      background: null,
+      background: '/assets/topics-library/ratio-percentage/Chapter-3-bg.png',
       fallbackSvg: '/assets/svg/chapter-3-ratio.svg',
+      backButton: '/assets/topics-library/ratio-percentage/Back-to-Button.png',
       units: [
-        { id: 'ratio', titleEn: 'Ratio', titleVi: 'Tỉ số' },
-        { id: 'word-problems-ratio', titleEn: 'Word Problems about Ratio', titleVi: 'Bài toán về tỉ số' },
-        { id: 'percentage', titleEn: 'Percentage', titleVi: 'Tỉ số phần trăm' },
-        { id: 'percentage-of-number', titleEn: 'Percentage of a Number', titleVi: 'Tìm tỉ số phần trăm của một số' },
-        { id: 'map-scale', titleEn: 'Map Scale', titleVi: 'Tỉ lệ bản đồ', image: '/assets/topics-library/ratio-percentage/map-scale-button.png' }
+        { id: 'btn-c3-ratio', titleEn: 'Ratio', titleVi: 'Tỉ số', image: '/assets/topics-library/ratio-percentage/ratio-button.png' },
+        { id: 'btn-c3-word-ratio', titleEn: 'Word Problems about Ratio', titleVi: 'Bài toán về tỉ số', image: '/assets/topics-library/ratio-percentage/word-ratio-button.png' },
+        { id: 'btn-c3-percentage', titleEn: 'Percentage', titleVi: 'Tỉ số phần trăm', image: '/assets/topics-library/ratio-percentage/percent-button.png' },
+        { id: 'btn-c3-percentage-of-number', titleEn: 'Percentage of a Number', titleVi: 'Tìm giá trị phần trăm của một số', image: '/assets/topics-library/ratio-percentage/percent-number-button.png' },
+        { id: 'btn-c3-map-scale', titleEn: 'Map Scale', titleVi: 'Tỉ lệ bản đồ', image: '/assets/topics-library/ratio-percentage/map-scale-button.png' }
       ]
     },
     geometryMeasurement: {
