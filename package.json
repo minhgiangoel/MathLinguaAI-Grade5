@@ -11,9 +11,12 @@
     "lint": "vite build"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
     "vite": "^5.4.10"
   },
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "firebase": "^13.1.0"
   }
 }

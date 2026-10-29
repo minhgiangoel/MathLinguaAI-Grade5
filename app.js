@@ -15,9 +15,19 @@ import {
   fetchAdminSettings,
   saveAdminSettings,
   fetchAdminOverview,
+  uploadAdminAsset,
   onAuthStateChanged
 } from './src/services/firebaseAuth.js';
 import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
+import { HECTARE_KM2_LESSON_DATA } from './src/data/lessonsData.js';
+import { DECIMAL_FRACTIONS_LESSON_DATA } from './src/data/decimalFractionsData.js';
+import { renderLessonPlayerContainer } from './src/components/LessonPlayer.js';
+import { VisualLayoutEditor, applySavedPageLayout } from './src/components/VisualLayoutEditor.js';
+import { renderMixedNumbersEmbed } from './src/components/lessons/mixed-numbers/MixedNumbersEmbed.js';
+import { renderMixedNumberAdventureEmbed } from './src/components/math-lab/MixedNumberAdventureEmbed.js';
+import { renderMathBuddyConversation } from './src/components/mathbuddy/MathBuddyPartner.js';
+import { renderMyProgressView } from './src/components/MyProgressView.js';
+import { recordLearningEvent } from './src/services/progressAnalytics.js';
 
 (() => {
   const NAV = {
@@ -27,6 +37,108 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     buddy:   { left: 59.5, width: 11.0, en: 'MathBuddy AI', vi: 'Trợ lí Toán học' },
     progress:{ left: 70.5, width: 11.5, en: 'My Progress', vi: 'Hồ sơ tiến bộ' },
   };
+
+  const HECTARE_PUBLISHED_LESSON_URL = 'https://mathlingua-ai-square-kilometre-hectare.ai.studio';
+  const DECIMAL_FRACTIONS_PUBLISHED_LESSON_URL = 'https://math-lingua-ai-grade5-decimal-fract.vercel.app/';
+  const GEOMETRY_3D_LAB_URL = '/assets/math-lab/3d_geometry_lab.html';
+
+  // Global Audio Manager for Background Music (Home Page Only) & Button Sound Effects
+  const AUDIO_SRC = '/assets/audio/The_Rocket_Playground.mp3';
+
+  let bgAudio = null;
+  let buttonAudioCtx = null;
+
+  function initBgMusic() {
+    if (bgAudio) return;
+    bgAudio = new Audio(AUDIO_SRC);
+    bgAudio.loop = true;
+    bgAudio.volume = 0.5;
+
+    if (currentRoute === 'home') {
+      attemptPlayBgMusic();
+    }
+
+    const unlockAudio = () => {
+      if (currentRoute === 'home' && bgAudio && bgAudio.paused) {
+        attemptPlayBgMusic();
+      }
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+  }
+
+  function attemptPlayBgMusic() {
+    if (!bgAudio) return;
+    bgAudio.volume = 0.5;
+    const playPromise = bgAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(err => {
+        console.warn('Autoplay waiting for user interaction on Home:', err);
+      });
+    }
+  }
+
+  function handleRouteMusic(targetRoute) {
+    if (!bgAudio) {
+      initBgMusic();
+      return;
+    }
+    if (targetRoute === 'home') {
+      bgAudio.volume = 0.5;
+      if (bgAudio.paused) {
+        attemptPlayBgMusic();
+      }
+    } else {
+      if (bgAudio && !bgAudio.paused) {
+        bgAudio.pause();
+      }
+    }
+  }
+
+  // Global Pleasant Click Sound Effect Generator via Web Audio API
+  function playButtonSound() {
+    try {
+      if (!buttonAudioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        buttonAudioCtx = new AudioContext();
+      }
+      if (buttonAudioCtx.state === 'suspended') {
+        buttonAudioCtx.resume().catch(() => {});
+      }
+      const osc = buttonAudioCtx.createOscillator();
+      const gain = buttonAudioCtx.createGain();
+
+      // Soft, clear, kid-friendly click sound (approx 50ms)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(580, buttonAudioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, buttonAudioCtx.currentTime + 0.05);
+
+      gain.gain.setValueAtTime(0.18, buttonAudioCtx.currentTime); // ~18-20% volume
+      gain.gain.exponentialRampToValueAtTime(0.001, buttonAudioCtx.currentTime + 0.05);
+
+      osc.connect(gain);
+      gain.connect(buttonAudioCtx.destination);
+
+      osc.start(buttonAudioCtx.currentTime);
+      osc.stop(buttonAudioCtx.currentTime + 0.05);
+    } catch (e) {
+      // Ignore Web Audio errors silently
+    }
+  }
+
+  // Global delegated listener for interactive button clicks
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('button, a, [role="button"], .hotspot, .nav-hotspot, input[type="submit"], input[type="button"], select, .choice-btn, .tab-btn, .game-card, .chapter-card, .unit-card, .menu-item-btn, .mobile-nav-item');
+    if (target && !target.disabled && !target.hasAttribute('disabled')) {
+      playButtonSound();
+    }
+  }, { capture: true, passive: true });
 
   const PAGE_META = {
     home: {
@@ -47,10 +159,17 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
       alt: 'Math Lab với các trò chơi Toán học tương tác',
       className: 'mathlab-board'
     },
+    game_3d_shapes: {
+      customRender: true,
+      alt: '3D Shape Studio · Khám phá hình học 3D (3D Geometry Lab)'
+    },
+    game_mixed_numbers: {
+      customRender: true,
+      alt: 'Phiêu lưu cùng hỗn số / Mixed Number Adventure'
+    },
     buddy: {
-      src: ASSET_MANIFEST.mathBuddy.fallbackSvg,
-      alt: 'Math Vocabulary và Speak and Pronounce',
-      className: 'buddy-board'
+      customRender: true,
+      alt: 'MathBuddy AI — Your Personal Math Conversation Partner'
     },
     progress: {
       customRender: true,
@@ -61,22 +180,35 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
       customRender: true,
       alt: 'Bảng quản trị và Quản lý học liệu MathLingua AI'
     },
+    lesson_ha_km2: {
+      customRender: true,
+      alt: 'Bài học song ngữ: Hectare and Square Kilometre / Héc-ta và Ki-lô-mét vuông'
+    },
+    lesson_decimal_fractions: {
+      customRender: true,
+      alt: 'Bài học song ngữ: Decimal Fractions / Phân số thập phân'
+    },
+    lesson_mixed_numbers: {
+      customRender: true,
+      alt: 'Bài học song ngữ: Mixed Numbers / Hỗn số'
+    },
     chapter1: {
       src: ASSET_MANIFEST.chapters.fraction.background,
       fallbackSrc: ASSET_MANIFEST.chapters.fraction.fallbackSvg,
       alt: 'Chủ đề Fraction, gồm Mixed Numbers và Decimal Fractions',
-      className: 'chapter-board'
+      className: 'chapter-board fraction-board'
     },
     chapter2: {
       src: ASSET_MANIFEST.chapters.decimalNumbers.background,
       fallbackSrc: ASSET_MANIFEST.chapters.decimalNumbers.fallbackSvg,
       alt: 'Chủ đề Decimal Numbers với bảy bài học',
-      className: 'chapter-board'
+      className: 'chapter-board decimal-board'
     },
     chapter3: {
-      src: ASSET_MANIFEST.chapters.ratioPercentage.fallbackSvg,
-      alt: 'Chủ đề Ratio and Percentage',
-      className: 'chapter-board'
+      src: ASSET_MANIFEST.chapters.ratioPercentage.background,
+      fallbackSrc: ASSET_MANIFEST.chapters.ratioPercentage.fallbackSvg,
+      alt: 'Chủ đề Ratio and Percentage với năm bài học',
+      className: 'chapter-board ratio-board'
     },
     chapter4: {
       customRender: true,
@@ -338,7 +470,8 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
 
   const routeState = {
     home: 'home', topics: 'topics', mathlab: 'mathlab', buddy: 'buddy', progress: 'progress', admin: 'admin',
-    chapter1: 'topics', chapter2: 'topics', chapter3: 'topics', chapter4: 'topics'
+    chapter1: 'topics', chapter2: 'topics', chapter3: 'topics', chapter4: 'topics',
+    lesson_ha_km2: 'topics', game_3d_shapes: 'mathlab', game_mixed_numbers: 'mathlab'
   };
 
   const root = document.getElementById('app-content');
@@ -347,9 +480,11 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
   const modalRoot = document.getElementById('modal-root');
 
   let currentRoute = 'home';
+  let previousRoute = 'chapter4';
   let currentUser = null;
   let currentUserProfile = null;
   let isUserMenuOpen = false;
+  let isMobileMenuOpen = false;
   let activeAdminTab = 'overview';
 
   const lessonData = {
@@ -380,6 +515,29 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     'topics/decimal-numbers': 'chapter2',
     'topics/ratio-percentage': 'chapter3',
     'topics/geometry-measurement': 'chapter4',
+    'topics/geometry-measurement/units/hectare-square-kilometre/lesson': 'lesson_ha_km2',
+    'topics/geometry-measurement/units/hectare-square-kilometre': 'lesson_ha_km2',
+    'topics/geometry-measurement/ha-km2': 'lesson_ha_km2',
+    'lesson/ha-km2': 'lesson_ha_km2',
+    'lesson-ha-km2': 'lesson_ha_km2',
+    'square-kilometre-hectare': 'lesson_ha_km2',
+    'hectare-square-kilometre': 'lesson_ha_km2',
+    'hectare-and-square-kilometre': 'lesson_ha_km2',
+    'lesson/square-kilometre-hectare': 'lesson_ha_km2',
+    'chapter4/ha-km2': 'lesson_ha_km2',
+    'chapter4/hectare': 'lesson_ha_km2',
+    'chapter1/mixed-numbers': 'lesson_mixed_numbers',
+    'topics/fraction/mixed-numbers': 'lesson_mixed_numbers',
+    'fraction/mixed-numbers': 'lesson_mixed_numbers',
+    'lesson/mixed-numbers': 'lesson_mixed_numbers',
+    'lesson-mixed-numbers': 'lesson_mixed_numbers',
+    'mixed-numbers': 'lesson_mixed_numbers',
+    'chapter1/decimal-fractions': 'lesson_decimal_fractions',
+    'topics/fraction/decimal-fractions': 'lesson_decimal_fractions',
+    'fraction/decimal-fractions': 'lesson_decimal_fractions',
+    'lesson/decimal-fractions': 'lesson_decimal_fractions',
+    'lesson-decimal-fractions': 'lesson_decimal_fractions',
+    'decimal-fractions': 'lesson_decimal_fractions',
     'fraction': 'chapter1',
     'decimal-numbers': 'chapter2',
     'ratio-percentage': 'chapter3',
@@ -393,6 +551,17 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     'admin/students': 'admin',
     'admin/reports': 'admin',
     'admin/settings': 'admin',
+    'mathlab/3d-shapes': 'game_3d_shapes',
+    'mathlab/3d-shape-studio': 'game_3d_shapes',
+    '3d-shapes': 'game_3d_shapes',
+    '3d-shape-studio': 'game_3d_shapes',
+    'mathlab/mixed-number-adventure': 'game_mixed_numbers',
+    'mathlab/mixed-numbers-adventure': 'game_mixed_numbers',
+    'mathlab/mixed-numbers': 'game_mixed_numbers',
+    'mathlab/mixed': 'game_mixed_numbers',
+    'mixed-number-adventure': 'game_mixed_numbers',
+    'game-mixed-numbers': 'game_mixed_numbers',
+    'game_mixed_numbers': 'game_mixed_numbers',
   };
 
   function currentHashRoute() {
@@ -417,14 +586,58 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
   function navigate(route, push = true) {
     const normalized = ROUTE_ALIASES[route] || route;
     const target = PAGE_META[normalized] ? normalized : 'home';
+    if (currentRoute !== target && currentRoute !== 'lesson_ha_km2') {
+      previousRoute = currentRoute;
+    }
     if (push && location.hash !== `#${route}`) history.pushState({ route }, '', `#${route}`);
     currentRoute = target;
     isUserMenuOpen = false;
+    isMobileMenuOpen = false;
+    handleRouteMusic(target);
     renderNav();
     renderPage();
     closeModal(false);
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
   }
+
+  window.mathlinguaNavigate = navigate;
+
+  function openVisualLayoutEditor() {
+    if (!currentUserProfile || (!currentUserProfile.isAdmin && !currentUserProfile.isTeacher)) {
+      openLoginModal('login');
+      const fb = modalRoot.querySelector('#auth-feedback');
+      if (fb) {
+        fb.style.display = 'block';
+        fb.className = 'auth-msg';
+        fb.textContent = 'Chức năng chỉnh sửa giao diện (Layout Editor) yêu cầu đăng nhập tài khoản Quản trị viên hoặc Giáo viên.';
+      }
+      return;
+    }
+    const stage = document.querySelector('.artboard') ||
+                  document.querySelector('.geometry-stage') ||
+                  document.querySelector('.lesson-player-stage') ||
+                  document.getElementById('app-content');
+    if (!stage) return;
+
+    if (window.activeLayoutEditor) {
+      window.activeLayoutEditor.destroy();
+      window.activeLayoutEditor = null;
+    }
+
+    window.activeLayoutEditor = new VisualLayoutEditor({
+      pageId: currentRoute,
+      stageElement: stage,
+      currentUser: currentUserProfile,
+      onNavigate: (route) => navigate(route),
+      onLayoutChange: (pageId, layers) => {
+        console.log(`[Layout saved/published for ${pageId}]`, layers);
+      },
+      onClose: () => {
+        window.activeLayoutEditor = null;
+      }
+    });
+  }
+  window.openVisualLayoutEditor = openVisualLayoutEditor;
 
   function navActiveRoute() { return routeState[currentRoute] || 'home'; }
 
@@ -442,16 +655,16 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     const isAdmin = Boolean(currentUserProfile && (currentUserProfile.isAdmin || currentUserProfile.role === 'admin' || currentUserProfile.isTeacher));
 
     const navItems = {
-      home:    { left: 26.5, width: 10.5, en: 'Home', vi: 'Trang chủ', route: 'home' },
-      topics:  { left: 37.0, width: 12.0, en: 'Topics Library', vi: 'Thư viện chủ đề', route: 'topics' },
-      mathlab: { left: 49.0, width: 10.5, en: 'Math Lab', vi: 'Vui học Toán', route: 'mathlab' },
-      buddy:   { left: 59.5, width: 11.0, en: 'MathBuddy AI', vi: 'Trợ lí Toán học', route: 'buddy' },
+      home:    { left: 26.5, width: 10.5, en: 'Home', vi: 'Trang chủ', route: 'home', icon: '🏠' },
+      topics:  { left: 37.0, width: 12.0, en: 'Topics Library', vi: 'Thư viện chủ đề', route: 'topics', icon: '📚' },
+      mathlab: { left: 49.0, width: 10.5, en: 'Math Lab', vi: 'Vui học Toán', route: 'mathlab', icon: '🔬' },
+      buddy:   { left: 59.5, width: 11.0, en: 'MathBuddy AI', vi: 'Trợ lí Toán học', route: 'buddy', icon: '🤖' },
     };
 
     if (isAdmin) {
-      navItems.admin = { left: 70.5, width: 11.5, en: 'Admin Dashboard', vi: 'Bảng quản trị', route: 'admin' };
+      navItems.admin = { left: 70.5, width: 11.5, en: 'Admin Dashboard', vi: 'Bảng quản trị', route: 'admin', icon: '⚙️' };
     } else {
-      navItems.progress = { left: 70.5, width: 11.5, en: 'My Progress', vi: 'Hồ sơ tiến bộ', route: 'progress' };
+      navItems.progress = { left: 70.5, width: 11.5, en: 'My Progress', vi: 'Hồ sơ tiến bộ', route: 'progress', icon: '📊' };
     }
 
     // Luminous active plate indicator under active tab
@@ -468,6 +681,73 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     Object.entries(navItems).forEach(([itemKey, tab]) => {
       addNavHotspot(`nav-${itemKey}`, tab.left, 8, tab.width, 84, () => navigate(tab.route), `${tab.en} / ${tab.vi}`);
     });
+
+    // Mobile Hamburger Toggle Button
+    const mobileToggle = document.createElement('button');
+    mobileToggle.type = 'button';
+    mobileToggle.className = 'nav-mobile-toggle';
+    mobileToggle.setAttribute('aria-label', isMobileMenuOpen ? 'Đóng menu điều hướng' : 'Mở menu điều hướng');
+    mobileToggle.setAttribute('aria-expanded', isMobileMenuOpen ? 'true' : 'false');
+    mobileToggle.innerHTML = isMobileMenuOpen
+      ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>`
+      : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12h18M3 6h18M3 18h18"/></svg>`;
+    mobileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isMobileMenuOpen = !isMobileMenuOpen;
+      isUserMenuOpen = false;
+      renderNav();
+    });
+    navHotspots.appendChild(mobileToggle);
+
+    // Mobile Navigation Drawer (Bilingual dropdown when toggle is open)
+    if (isMobileMenuOpen) {
+      const drawer = document.createElement('div');
+      drawer.className = 'nav-mobile-drawer';
+      drawer.setAttribute('role', 'dialog');
+      drawer.setAttribute('aria-label', 'Danh mục điều hướng di động');
+
+      Object.entries(navItems).forEach(([itemKey, tab]) => {
+        const itemBtn = document.createElement('button');
+        itemBtn.type = 'button';
+        itemBtn.className = `mobile-nav-item${active === itemKey ? ' active' : ''}`;
+        itemBtn.innerHTML = `
+          <span class="mobile-nav-icon">${tab.icon}</span>
+          <span class="mobile-nav-label">
+            <span class="mobile-nav-en">${tab.en}</span>
+            <span class="mobile-nav-vi">${tab.vi}</span>
+          </span>
+        `;
+        itemBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isMobileMenuOpen = false;
+          navigate(tab.route);
+        });
+        drawer.appendChild(itemBtn);
+      });
+
+      if (isAdmin) {
+        const editLayoutBtn = document.createElement('button');
+        editLayoutBtn.type = 'button';
+        editLayoutBtn.className = 'mobile-nav-item';
+        editLayoutBtn.style.borderColor = '#00e5ff';
+        editLayoutBtn.innerHTML = `
+          <span class="mobile-nav-icon">🎨</span>
+          <span class="mobile-nav-label">
+            <span class="mobile-nav-en" style="color:#00e5ff;">Edit Layout</span>
+            <span class="mobile-nav-vi">Chỉnh sửa giao diện</span>
+          </span>
+        `;
+        editLayoutBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isMobileMenuOpen = false;
+          renderNav();
+          openVisualLayoutEditor();
+        });
+        drawer.appendChild(editLayoutBtn);
+      }
+
+      navHotspots.appendChild(drawer);
+    }
 
     if (!currentUserProfile) {
       addNavHotspot('nav-login', 81.5, 8, 16.5, 84, () => openLoginModal('login'), 'Log in / Đăng nhập');
@@ -506,6 +786,7 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       isUserMenuOpen = !isUserMenuOpen;
+      isMobileMenuOpen = false;
       renderNav();
     });
 
@@ -519,6 +800,7 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
       if (currentUserProfile.isAdmin || currentUserProfile.isTeacher) {
         menu.innerHTML = `
           <button type="button" class="menu-item-btn" data-menu="profile">👤 My Profile / Hồ sơ của tôi</button>
+          <button type="button" class="menu-item-btn" data-menu="edit-layout" style="color:#00e5ff;font-weight:800;">🎨 Edit Layout / Chỉnh sửa giao diện</button>
           <button type="button" class="menu-item-btn" data-menu="admin-dash">📊 Overview / Tổng quan</button>
           <button type="button" class="menu-item-btn" data-menu="admin-lessons">📚 Lessons / Quản lý bài học</button>
           <button type="button" class="menu-item-btn" data-menu="admin-questions">❓ Question Bank / Ngân hàng câu hỏi</button>
@@ -540,6 +822,11 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
         isUserMenuOpen = false;
         renderNav();
         openProfileModal();
+      });
+      menu.querySelector('[data-menu="edit-layout"]')?.addEventListener('click', () => {
+        isUserMenuOpen = false;
+        renderNav();
+        openVisualLayoutEditor();
       });
       menu.querySelector('[data-menu="progress"]')?.addEventListener('click', () => {
         isUserMenuOpen = false;
@@ -636,19 +923,31 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
   function addHotspot(board, spec) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = `hotspot${spec.className ? ' ' + spec.className : ''}`;
+    b.className = `hotspot${spec.buttonImg ? ' img-btn' : ''}${spec.className ? ' ' + spec.className : ''}`;
     b.style.left = `${spec.x * 100}%`;
     b.style.top = `${spec.y * 100}%`;
     b.style.width = `${spec.w * 100}%`;
     b.style.height = `${spec.h * 100}%`;
     b.setAttribute('aria-label', spec.label || spec.title || 'Mở nội dung');
     b.title = spec.label || spec.title || 'Mở nội dung';
+    if (spec.layerId) {
+      b.id = spec.layerId;
+      b.setAttribute('data-layout-layer', spec.layerId);
+      b.setAttribute('data-layer-title', spec.label || spec.title || spec.layerId);
+      b.setAttribute('data-layer-type', 'button');
+    }
+    if (spec.route) {
+      b.setAttribute('data-route', spec.route);
+    }
     if (spec.buttonImg) {
       b.innerHTML = `<img src="${spec.buttonImg}" alt="${spec.label || spec.title || ''}" draggable="false" />`;
     } else if (spec.visibleText) {
       b.innerHTML = spec.visibleText;
     }
-    b.addEventListener('click', () => runHotspot(spec));
+    b.addEventListener('click', () => {
+      if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+      runHotspot(spec);
+    });
     board.appendChild(b);
   }
 
@@ -665,6 +964,9 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     // 1. Topic Background: Canva artwork
     const bgContainer = document.createElement('div');
     bgContainer.className = 'geometry-bg-container';
+    bgContainer.setAttribute('data-layout-layer', 'geo-bg');
+    bgContainer.setAttribute('data-layer-title', 'Nền Hình học (Chapter 4 Artwork)');
+    bgContainer.setAttribute('data-layer-type', 'background');
 
     const bgImg = document.createElement('img');
     bgImg.className = 'geometry-topic-bg';
@@ -691,10 +993,17 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     const backBtn = document.createElement('button');
     backBtn.type = 'button';
     backBtn.className = 'geometry-back-btn';
+    backBtn.setAttribute('data-layout-layer', 'geo-back-btn');
+    backBtn.setAttribute('data-layer-title', 'Nút Quay lại thư viện');
+    backBtn.setAttribute('data-layer-type', 'button');
+    backBtn.setAttribute('data-route', 'topics');
     backBtn.setAttribute('aria-label', 'Back to Topics Library / Quay lại thư viện chủ đề');
     backBtn.title = 'Back to Topics Library / Quay lại thư viện chủ đề';
     backBtn.innerHTML = `<img src="/assets/topics-library/geometry-measurement/Back-to-Button.png" alt="Back to Topics Library" draggable="false" />`;
-    backBtn.addEventListener('click', () => navigate('topics'));
+    backBtn.addEventListener('click', () => {
+      if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+      navigate('topics');
+    });
 
     topBar.appendChild(backBtn);
     stage.appendChild(topBar);
@@ -708,6 +1017,9 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     // 4. Interactive Unit Grid (13 Unit Buttons)
     const interactiveZone = document.createElement('div');
     interactiveZone.className = 'geometry-interactive-zone';
+    interactiveZone.setAttribute('data-layout-layer', 'geo-grid');
+    interactiveZone.setAttribute('data-layer-title', 'Lưới 13 bài học Hình học');
+    interactiveZone.setAttribute('data-layer-type', 'container');
 
     const grid = document.createElement('div');
     grid.className = 'geometry-unit-grid';
@@ -725,7 +1037,10 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
       btn.setAttribute('aria-label', `${unit.number}. ${unit.titleEn} / ${unit.titleVi}`);
       btn.title = `${unit.number}. ${unit.titleEn} / ${unit.titleVi}`;
       btn.innerHTML = `<img src="${unit.image}" alt="${unit.titleEn}" draggable="false" loading="eager" />`;
-      btn.addEventListener('click', () => openGeometryUnit(unit));
+      btn.addEventListener('click', () => {
+        if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+        openGeometryUnit(unit);
+      });
 
       item.appendChild(btn);
       grid.appendChild(item);
@@ -733,11 +1048,32 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
 
     interactiveZone.appendChild(grid);
     stage.appendChild(interactiveZone);
+
+    if (currentUserProfile && (currentUserProfile.isAdmin || currentUserProfile.isTeacher)) {
+      const editLayoutBar = document.createElement('div');
+      editLayoutBar.className = 'vle-floating-trigger';
+      editLayoutBar.innerHTML = `
+        <button type="button" class="vle-tool-btn" id="btn-in-situ-layout-editor" style="background:#09255e;border:1.5px solid #00e5ff;color:#00e5ff;box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+          🎨 Chỉnh sửa giao diện / Edit Layout
+        </button>
+      `;
+      editLayoutBar.querySelector('#btn-in-situ-layout-editor')?.addEventListener('click', () => {
+        openVisualLayoutEditor();
+      });
+      scroll.appendChild(editLayoutBar);
+    }
+
     scroll.appendChild(stage);
     root.appendChild(scroll);
+
+    applySavedPageLayout('chapter4', Boolean(currentUserProfile && (currentUserProfile.isAdmin || currentUserProfile.isTeacher)));
   }
 
   function openGeometryUnit(unit) {
+    if (unit.id === 'ha-km2') {
+      navigate('lesson_ha_km2');
+      return;
+    }
     openModal({
       title: unit.titleEn,
       subtitle: `${unit.number}. ${unit.titleVi}`,
@@ -783,7 +1119,7 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
         feedback.innerHTML = `${isCorrect ? '✅ Correct! · Chính xác!' : '💡 Not quite. · Chưa chính xác.'}<div class="modal-note">${unit.quiz.explanation}</div>`;
       }
 
-      // Persist student learning progress to Firestore
+      // Persist student learning progress to Firestore & Unified Analytics
       if (currentUser) {
         saveStudentProgress({
           topicId: 'chapter4',
@@ -798,176 +1134,43 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
           vocabPracticed: unit.vocab.map(v => v.en)
         }).catch(err => console.warn('Could not save progress to Firestore:', err));
       }
+
+      // Record standardized learning event
+      recordLearningEvent({
+        topicId: 'chapter4',
+        activityId: unit.id,
+        sourceModule: 'individual_lesson',
+        learningObjectiveIds: [unit.id === 'ha-km2' ? 'area_units' : 'shape_properties'],
+        skillEvidence: {
+          reading: { score: isCorrect ? 100 : 40, method: 'quiz_reading' }
+        },
+        score: isCorrect ? 100 : 0,
+        maxScore: 100,
+        attempts: 1,
+        completionStatus: isCorrect ? 'completed' : 'attempted',
+        assessmentMethod: 'quiz_reading',
+        confidence: 'high'
+      }).catch(err => console.warn('Could not record learning event:', err));
     }));
   }
 
   async function renderProgressPage() {
     root.innerHTML = '';
     const scroll = document.createElement('div');
-    scroll.className = 'stage-scroll';
+    scroll.className = 'stage-scroll min-h-screen py-6 bg-slate-900/90';
 
     const container = document.createElement('div');
-    container.className = 'progress-live-container';
-
-    if (!currentUserProfile) {
-      container.innerHTML = `
-        <div class="progress-hero-banner">
-          <div class="progress-hero-info">
-            <h2>Hồ sơ tiến bộ học tập · My Progress</h2>
-            <p>Hệ thống tự động ghi nhận điểm số, từ vựng và bài học song ngữ của riêng bạn.</p>
-          </div>
-          <button type="button" class="auth-submit-btn" style="width:auto;padding:10px 24px;" id="btn-login-progress">
-            🚀 Đăng nhập ngay / Log In Now
-          </button>
-        </div>
-
-        <div class="progress-section-card">
-          <div class="progress-section-title">
-            <span>✨ Hành trình học tập cùng MathLingua AI</span>
-          </div>
-          <p style="color:#b5d4fc;font-size:14px;line-height:1.6;margin:0;">
-            Khi đăng nhập tài khoản học sinh, bạn sẽ mở khóa:
-          </p>
-          <div class="progress-kpi-grid">
-            <div class="progress-kpi-card">
-              <span class="progress-kpi-title">Tiến độ lưu tự động</span>
-              <span class="progress-kpi-val">100%</span>
-              <span class="progress-kpi-sub">Lưu trên Cloud Firestore</span>
-            </div>
-            <div class="progress-kpi-card">
-              <span class="progress-kpi-title">Tiếp tục bài học dở</span>
-              <span class="progress-kpi-val">1-Click</span>
-              <span class="progress-kpi-sub">Khôi phục bài học gần nhất</span>
-            </div>
-            <div class="progress-kpi-card">
-              <span class="progress-kpi-title">Từ vựng & Kỹ năng</span>
-              <span class="progress-kpi-val">Anh - Việt</span>
-              <span class="progress-kpi-sub">Báo cáo năng lực chuẩn</span>
-            </div>
-          </div>
-        </div>
-      `;
-
-      container.querySelector('#btn-login-progress')?.addEventListener('click', () => openLoginModal('login'));
-      scroll.appendChild(container);
-      root.appendChild(scroll);
-      return;
-    }
-
-    // Logged in student view: Fetch live progress from Firestore
-    container.innerHTML = `
-      <div class="progress-hero-banner">
-        <div style="display:flex;align-items:center;gap:16px;">
-          <div class="nav-user-avatar" style="width:52px;height:52px;">
-            ${renderAvatarSvg(currentUserProfile.avatarUrl, currentUserProfile.role)}
-          </div>
-          <div class="progress-hero-info">
-            <h2>${escapeAttr(currentUserProfile.displayName || currentUserProfile.username)}</h2>
-            <p>Lớp ${escapeAttr(currentUserProfile.classId || '5A1')} · ${escapeAttr(currentUserProfile.grade || 'Grade 5')} · MathLingua Explorer</p>
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <span class="status-badge completed">Đang hoạt động</span>
-        </div>
-      </div>
-
-      <div id="progress-kpi-placeholder" style="text-align:center;padding:20px;color:#8ab4f8;">
-        Đang tải dữ liệu tiến độ từ Cloud Firestore...
-      </div>
-    `;
+    container.className = 'progress-live-container max-w-6xl mx-auto px-4';
 
     scroll.appendChild(container);
     root.appendChild(scroll);
 
-    const progressRecords = await fetchStudentProgress(currentUser.uid);
-
-    const completedUnits = progressRecords.filter(r => r.status === 'completed');
-    const inProgressUnits = progressRecords.filter(r => r.status === 'in_progress');
-    const totalAttempts = progressRecords.reduce((acc, cur) => acc + (cur.attempts || 1), 0);
-    const avgScore = completedUnits.length > 0
-      ? Math.round(completedUnits.reduce((acc, cur) => acc + (cur.score || 100), 0) / completedUnits.length)
-      : 0;
-
-    const lastStudied = progressRecords[0] || null;
-
-    const kpiPlaceholder = container.querySelector('#progress-kpi-placeholder');
-    if (kpiPlaceholder) {
-      kpiPlaceholder.outerHTML = `
-        <div class="progress-kpi-grid">
-          <div class="progress-kpi-card">
-            <span class="progress-kpi-title">Bài đã hoàn thành / Completed</span>
-            <span class="progress-kpi-val">${completedUnits.length}</span>
-            <span class="progress-kpi-sub">${inProgressUnits.length} bài đang học</span>
-          </div>
-          <div class="progress-kpi-card">
-            <span class="progress-kpi-title">Độ chính xác / Accuracy</span>
-            <span class="progress-kpi-val">${avgScore}%</span>
-            <span class="progress-kpi-sub">Điểm trung bình các bài tập</span>
-          </div>
-          <div class="progress-kpi-card">
-            <span class="progress-kpi-title">Số lần luyện tập / Attempts</span>
-            <span class="progress-kpi-val">${totalAttempts}</span>
-            <span class="progress-kpi-sub">Tổng số lượt làm bài</span>
-          </div>
-          <div class="progress-kpi-card">
-            <span class="progress-kpi-title">Kỹ năng rèn luyện / Skills</span>
-            <span class="progress-kpi-val">${new Set(progressRecords.flatMap(r => r.skills || [])).size}</span>
-            <span class="progress-kpi-sub">Khái niệm Toán & Từ vựng</span>
-          </div>
-        </div>
-
-        ${lastStudied ? `
-          <div class="progress-resume-box">
-            <div>
-              <span style="font-size:12px;color:#ffd65e;text-transform:uppercase;font-weight:800;">Tiếp tục bài học dở · Resume</span>
-              <div style="font-size:16px;font-weight:900;color:#ffffff;margin-top:2px;">
-                ${escapeAttr(lastStudied.titleEn)} / ${escapeAttr(lastStudied.titleVi)}
-              </div>
-              <span style="font-size:12px;color:#9ebfe8;">Lần học gần nhất: ${new Date(lastStudied.lastStudiedAt || Date.now()).toLocaleTimeString()}</span>
-            </div>
-            <button type="button" class="action-btn primary" id="btn-resume-last">Tiếp tục học ngay / Resume</button>
-          </div>
-        ` : ''}
-
-        <div class="progress-section-card">
-          <div class="progress-section-title">
-            <span>Chi tiết các bài học đã rèn luyện</span>
-            <span style="font-size:12px;color:#8ab4f8;font-weight:500;">Cập nhật tức thời</span>
-          </div>
-
-          ${progressRecords.length === 0 ? `
-            <p style="color:#9bb9e8;font-size:14px;margin:0;">
-              Bạn chưa hoàn thành bài tập nào. Hãy vào <strong>Topics Library</strong> hoặc <strong>Math Lab</strong> để bắt đầu thử sức nhé!
-            </p>
-          ` : `
-            <div class="progress-unit-list">
-              ${progressRecords.map(r => `
-                <div class="progress-unit-item">
-                  <div>
-                    <strong style="color:#ffffff;">${escapeAttr(r.titleEn)}</strong>
-                    <div style="font-size:12px;color:#9ec2f5;">${escapeAttr(r.titleVi)} · Điểm: ${r.score}% (${r.attempts || 1} lần thử)</div>
-                  </div>
-                  <span class="status-badge ${r.status}">${r.status === 'completed' ? 'Đã hoàn thành' : 'Đang học'}</span>
-                </div>
-              `).join('')}
-            </div>
-          `}
-        </div>
-      `;
-
-      container.querySelector('#btn-resume-last')?.addEventListener('click', () => {
-        if (!lastStudied) return;
-        if (lastStudied.topicId === 'chapter4') {
-          navigate('chapter4');
-          const unit = GEOMETRY_UNITS.find(u => u.id === lastStudied.unitId);
-          if (unit) setTimeout(() => openGeometryUnit(unit), 250);
-        } else if (lastStudied.topicId === 'mathlab') {
-          navigate('mathlab');
-        } else {
-          navigate(lastStudied.topicId || 'topics');
-        }
-      });
-    }
+    await renderMyProgressView(container, (hash) => {
+      if (typeof hash === 'string') {
+        const routeName = hash.replace('#', '');
+        navigate(routeName || 'home');
+      }
+    });
   }
 
   async function renderAdminPage() {
@@ -1092,6 +1295,186 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
         category: 'Topics / Chủ đề',
         type: 'Hành tinh Hình học & Đo lường (Chapter 4)',
         target: 'Topics Library -> Chapter 4',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Fraction Topic Background / Nền Phân số Canva',
+        path: '/assets/topics-library/fraction/Chapter-1-bg.png',
+        dimensions: '2730 × 1536 (16:9)',
+        category: 'Fraction / Phân số',
+        type: 'Nền vũ trụ không gian + phi thuyền + đảo nổi phân số',
+        target: 'Trang Chapter 1 (#chapter1)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Fraction Back Button / Nút Quay lại thư viện',
+        path: '/assets/topics-library/fraction/Back-to-Button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Fraction / Phân số',
+        type: 'Artwork nút bấm Canva gốc',
+        target: 'Nút quay về Topics Library trên Chapter 1',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Mixed Numbers Button / Nút Hỗn số',
+        path: '/assets/topics-library/fraction/Mixed-number-button.png',
+        dimensions: '304 × 189 (~1.61:1)',
+        category: 'Fraction / Phân số',
+        type: 'Nút bài học Hỗn số Canva gốc',
+        target: 'Bài 1: Mixed Numbers (Chapter 1)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Decimal Fractions Button / Nút Phân số thập phân',
+        path: '/assets/topics-library/fraction/Decimal-fraction-button.png',
+        dimensions: '304 × 173 (~1.76:1)',
+        category: 'Fraction / Phân số',
+        type: 'Nút bài học Phân số thập phân Canva gốc',
+        target: 'Bài 2: Decimal Fractions (Chapter 1)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Decimal Numbers Background / Nền Số thập phân Canva',
+        path: '/assets/topics-library/decimal-numbers/Chapter-2-bg.png',
+        dimensions: '2730 × 1536 (16:9)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nền vũ trụ không gian + phi thuyền + đảo nổi số thập phân',
+        target: 'Trang Chapter 2 (#chapter2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Decimal Numbers Back Button / Nút Quay lại thư viện',
+        path: '/assets/topics-library/decimal-numbers/Back-to-Button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Artwork nút bấm Canva gốc',
+        target: 'Nút quay về Topics Library trên Chapter 2',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Decimal Numbers Button / Nút Số thập phân',
+        path: '/assets/topics-library/decimal-numbers/decimal-number-button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nút bài học Số thập phân Canva gốc',
+        target: 'Bài 1: Decimal Numbers (Chapter 2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Comparing Decimals Button / Nút So sánh số thập phân',
+        path: '/assets/topics-library/decimal-numbers/Comparing-Decimal-Numbers-button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nút bài học So sánh số thập phân Canva gốc',
+        target: 'Bài 2: Comparing Decimal Numbers (Chapter 2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Writing Length Button / Nút Viết số đo độ dài dạng STP',
+        path: '/assets/topics-library/decimal-numbers/writing-length-button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nút bài học Viết số đo độ dài dạng STP Canva gốc',
+        target: 'Bài 3: Writing Length Measurements as Decimals (Chapter 2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Writing Weight Button / Nút Viết số đo khối lượng dạng STP',
+        path: '/assets/topics-library/decimal-numbers/writing-weight-button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nút bài học Viết số đo khối lượng dạng STP Canva gốc',
+        target: 'Bài 4: Writing Mass Measurements as Decimals (Chapter 2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Writing Area Button / Nút Viết số đo diện tích dạng STP',
+        path: '/assets/topics-library/decimal-numbers/writing-area-button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nút bài học Viết số đo diện tích dạng STP Canva gốc',
+        target: 'Bài 5: Writing Area Measurements as Decimals (Chapter 2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Rounding Decimals Button / Nút Làm tròn số thập phân',
+        path: '/assets/topics-library/decimal-numbers/rounding-Decimal-Numbers-button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nút bài học Làm tròn số thập phân Canva gốc',
+        target: 'Bài 6: Rounding Decimal Numbers (Chapter 2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Operations with Decimals Button / Nút Các phép tính số thập phân',
+        path: '/assets/topics-library/decimal-numbers/operation-Decimal-Numbers-button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Decimal / Số thập phân',
+        type: 'Nút bài học Các phép tính với số thập phân Canva gốc',
+        target: 'Bài 7: Operations with Decimal Numbers (Chapter 2)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Ratio & Percentage Background / Nền Tỉ số & Phần trăm Canva',
+        path: '/assets/topics-library/ratio-percentage/Chapter-3-bg.png',
+        dimensions: '2752 × 1536 (16:9)',
+        category: 'Ratio / Tỉ số & Phần trăm',
+        type: 'Nền không gian vũ trụ với tiêu đề Ratio and Percentage Canva gốc',
+        target: 'Trang Chapter 3 (#chapter3)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Back Button / Nút Quay lại thư viện (Chapter 3)',
+        path: '/assets/topics-library/ratio-percentage/Back-to-Button.png',
+        dimensions: '560 × 189 (~2.96:1)',
+        category: 'Ratio / Tỉ số & Phần trăm',
+        type: 'Nút bấm điều hướng quay lại Topics Library Canva gốc',
+        target: 'Nút quay về Topics Library trên Chapter 3',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Ratio Button / Nút Bài học Tỉ số',
+        path: '/assets/topics-library/ratio-percentage/ratio-button.png',
+        dimensions: '6164 × 4983 (~1.24:1)',
+        category: 'Ratio / Tỉ số & Phần trăm',
+        type: 'Nút bài học Tỉ số Canva gốc',
+        target: 'Bài 1: Ratio / Tỉ số (Chapter 3)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Word Problems about Ratio Button / Nút Bài toán về tỉ số',
+        path: '/assets/topics-library/ratio-percentage/word-ratio-button.png',
+        dimensions: '5684 × 4983 (~1.14:1)',
+        category: 'Ratio / Tỉ số & Phần trăm',
+        type: 'Nút bài học Bài toán về tỉ số Canva gốc',
+        target: 'Bài 2: Word Problems about Ratio (Chapter 3)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Percentage Button / Nút Tỉ số phần trăm',
+        path: '/assets/topics-library/ratio-percentage/percent-button.png',
+        dimensions: '5684 × 4983 (~1.14:1)',
+        category: 'Ratio / Tỉ số & Phần trăm',
+        type: 'Nút bài học Tỉ số phần trăm Canva gốc',
+        target: 'Bài 3: Percentage / Tỉ số phần trăm (Chapter 3)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Percentage of a Number Button / Nút Tìm giá trị phần trăm của một số',
+        path: '/assets/topics-library/ratio-percentage/percent-number-button.png',
+        dimensions: '5684 × 4983 (~1.14:1)',
+        category: 'Ratio / Tỉ số & Phần trăm',
+        type: 'Nút bài học Tìm giá trị phần trăm của một số Canva gốc',
+        target: 'Bài 4: Percentage of a Number (Chapter 3)',
+        status: 'Verified Canva Asset'
+      },
+      {
+        name: 'Map Scale Button / Nút Tỉ lệ bản đồ',
+        path: '/assets/topics-library/ratio-percentage/map-scale-button.png',
+        dimensions: '5684 × 4983 (~1.14:1)',
+        category: 'Ratio / Tỉ số & Phần trăm',
+        type: 'Nút bài học Tỉ lệ bản đồ Canva gốc',
+        target: 'Bài 5: Map Scale / Tỉ lệ bản đồ (Chapter 3)',
         status: 'Verified Canva Asset'
       },
       {
@@ -1545,7 +1928,16 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
                       <span class="en-line">Illustration Image URL</span>
                       <span class="vi-line">Đường dẫn ảnh minh họa</span>
                     </label>
-                    <input type="text" class="auth-input" id="nl-image-url" placeholder="/assets/topics-library/geometry-measurement/triangle-button.png" />
+                    <input type="text" class="auth-input" id="nl-image-url" placeholder="/assets/topics-library/geometry-measurement/ha-km2-button.png" />
+                  </div>
+
+                  <div class="form-field">
+                    <label class="form-label">
+                      <span class="en-line">Upload Image / Audio File</span>
+                      <span class="vi-line">Tải tệp phương tiện từ máy tính</span>
+                    </label>
+                    <input type="file" class="auth-input" id="nl-file-upload" accept="image/*,audio/*" style="padding:6px;font-size:12px;" />
+                    <span id="nl-upload-status" style="font-size:12px;color:#ffd65e;display:block;margin-top:4px;"></span>
                   </div>
 
                   <div class="form-field">
@@ -1658,6 +2050,31 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
           });
           body.querySelector('#btn-cancel-add-lesson')?.addEventListener('click', () => {
             if (addPanel) addPanel.style.display = 'none';
+          });
+
+          const fileInput = body.querySelector('#nl-file-upload');
+          const uploadStatus = body.querySelector('#nl-upload-status');
+          fileInput?.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            if (uploadStatus) uploadStatus.textContent = '⏳ Đang tải tệp lên máy chủ...';
+            try {
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const base64 = reader.result;
+                const uploaded = await uploadAdminAsset({
+                  filename: file.name,
+                  fileData: base64,
+                  mimeType: file.type
+                });
+                const imgInput = body.querySelector('#nl-image-url');
+                if (imgInput) imgInput.value = uploaded.url;
+                if (uploadStatus) uploadStatus.textContent = '✅ Đã tải tệp lên thành công: ' + uploaded.url;
+              };
+              reader.readAsDataURL(file);
+            } catch (err) {
+              if (uploadStatus) uploadStatus.textContent = '❌ Lỗi tải tệp: ' + err.message;
+            }
           });
 
           body.querySelector('#filter-topic-select')?.addEventListener('change', (e) => {
@@ -2613,7 +3030,411 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     root.appendChild(scroll);
   }
 
+  function renderSquareKilometreHectareLesson() {
+    root.innerHTML = '';
+
+    const scroll = document.createElement('div');
+    scroll.className = 'stage-scroll lesson-embed-scroll';
+
+    const container = document.createElement('div');
+    container.className = 'lesson-embed-container';
+
+    // 1. Single Back Arrow Navigation Toolbar (Outside of iframe)
+    const backToolbar = document.createElement('div');
+    backToolbar.className = 'lesson-back-toolbar-simple';
+    backToolbar.innerHTML = `
+      <button type="button" class="lesson-back-icon-btn" id="btn-back-geometry" aria-label="Back to Geometry and Measurement" title="Back to Geometry and Measurement">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </button>
+    `;
+
+    // Clicking Back icon returns strictly to Geometry and Measurement page (chapter4)
+    backToolbar.querySelector('#btn-back-geometry')?.addEventListener('click', () => {
+      navigate('chapter4');
+    });
+
+    container.appendChild(backToolbar);
+
+    // 2. Fallback / Error banner (hidden initially, shown on iframe load failure or timeout)
+    const errorBanner = document.createElement('div');
+    errorBanner.className = 'lesson-embed-error-banner';
+    errorBanner.id = 'lesson-error-banner';
+    errorBanner.style.display = 'none';
+    errorBanner.innerHTML = `
+      <div class="error-banner-content">
+        <span class="error-banner-icon">💡</span>
+        <div class="error-banner-text">
+          <h4>Thông báo kết nối bài học trực tiếp</h4>
+          <p>Nếu bài học tải chậm do chính sách bảo mật trình duyệt hoặc kết nối mạng, bạn có thể nhấn Thử lại hoặc Mở bài học trong tab mới để trải nghiệm đầy đủ.</p>
+        </div>
+      </div>
+      <div class="error-banner-actions">
+        <button type="button" class="action-btn" id="btn-retry-iframe">🔄 Thử lại / Retry</button>
+        <a href="${HECTARE_PUBLISHED_LESSON_URL}" target="_blank" rel="noopener noreferrer" class="action-btn primary" style="text-decoration:none;">
+          🚀 Open Lesson in New Tab / Mở bài học trong tab mới
+        </a>
+      </div>
+    `;
+    container.appendChild(errorBanner);
+
+    // 3. Main Lesson Area: Responsive iframe displaying external lesson app
+    const frameWrap = document.createElement('div');
+    frameWrap.className = 'lesson-embed-frame-wrap';
+    frameWrap.id = 'lesson-frame-wrap';
+
+    // Loading State Overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'lesson-embed-loading';
+    loadingOverlay.id = 'lesson-loading-overlay';
+    loadingOverlay.innerHTML = `
+      <div class="loading-planet-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-core">🚀</div>
+      </div>
+      <h3 style="margin:16px 0 6px;color:#ffffff;font-size:18px;font-weight:900;">
+        Loading lesson... / Đang tải bài học...
+      </h3>
+      <p style="margin:0;color:#9bc3f8;font-size:14px;max-width:540px;line-height:1.5;">
+        Đang kết nối ứng dụng học tập Hectare and Square Kilometre. Đầy đủ các phần Explore, Vocab, Structure và Practice.
+      </p>
+    `;
+    frameWrap.appendChild(loadingOverlay);
+
+    // Responsive Iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = 'external-hectare-iframe';
+    iframe.className = 'lesson-embed-iframe';
+    iframe.src = HECTARE_PUBLISHED_LESSON_URL;
+    iframe.title = 'Hectare and Square Kilometre | MathLingua AI';
+    iframe.setAttribute('allow', 'camera; microphone; autoplay; display-capture; clipboard-write; fullscreen');
+    iframe.setAttribute('loading', 'eager');
+    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+    iframe.setAttribute('tabindex', '0');
+
+    let isIframeLoaded = false;
+
+    iframe.onload = () => {
+      isIframeLoaded = true;
+      if (loadingOverlay && loadingOverlay.parentNode) {
+        loadingOverlay.classList.add('fade-out');
+        setTimeout(() => {
+          if (loadingOverlay.parentNode) loadingOverlay.style.display = 'none';
+        }, 300);
+      }
+    };
+
+    iframe.onerror = () => {
+      if (loadingOverlay) loadingOverlay.style.display = 'none';
+      errorBanner.style.display = 'flex';
+    };
+
+    // Safety timeout: if iframe load takes over 8.5 seconds, display fallback banner with Retry & New Tab
+    setTimeout(() => {
+      if (!isIframeLoaded) {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        errorBanner.style.display = 'flex';
+      }
+    }, 8500);
+
+    // Retry button action
+    errorBanner.querySelector('#btn-retry-iframe')?.addEventListener('click', () => {
+      isIframeLoaded = false;
+      errorBanner.style.display = 'none';
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+        loadingOverlay.classList.remove('fade-out');
+      }
+      iframe.src = HECTARE_PUBLISHED_LESSON_URL;
+    });
+
+    frameWrap.appendChild(iframe);
+    container.appendChild(frameWrap);
+    scroll.appendChild(container);
+    root.appendChild(scroll);
+  }
+
+  function render3DShapeStudioGame() {
+    root.innerHTML = '';
+
+    const scroll = document.createElement('div');
+    scroll.className = 'stage-scroll lesson-embed-scroll';
+
+    const container = document.createElement('div');
+    container.className = 'lesson-embed-container';
+
+    // 1. Back to Math Lab Toolbar (Outside of iframe)
+    const backToolbar = document.createElement('div');
+    backToolbar.className = 'lesson-back-toolbar-simple';
+    backToolbar.innerHTML = `
+      <button type="button" class="lesson-back-text-btn" id="btn-back-mathlab" aria-label="Back to Math Lab / Quay lại Math Lab" title="Back to Math Lab / Quay lại Math Lab">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>← Back to Math Lab / Quay lại Math Lab</span>
+      </button>
+    `;
+
+    backToolbar.querySelector('#btn-back-mathlab')?.addEventListener('click', () => {
+      navigate('mathlab');
+    });
+
+    container.appendChild(backToolbar);
+
+    // 2. Error / Fallback banner (hidden initially, shown on iframe load failure or timeout)
+    const errorBanner = document.createElement('div');
+    errorBanner.className = 'lesson-embed-error-banner';
+    errorBanner.id = 'game-3d-error-banner';
+    errorBanner.style.display = 'none';
+    errorBanner.innerHTML = `
+      <div class="error-banner-content">
+        <span class="error-banner-icon">🎲</span>
+        <div class="error-banner-text">
+          <h4>Thông báo kết nối công cụ 3D Shape Studio</h4>
+          <p>Nếu công cụ mô phỏng 3D tải chậm do chính sách bảo mật trình duyệt hoặc mạng, bạn có thể nhấn Thử lại hoặc Mở trong tab mới để trải nghiệm đầy đủ.</p>
+        </div>
+      </div>
+      <div class="error-banner-actions">
+        <button type="button" class="action-btn" id="btn-retry-3d-iframe">🔄 Thử lại / Retry</button>
+        <a href="${GEOMETRY_3D_LAB_URL}" target="_blank" rel="noopener noreferrer" class="action-btn primary" style="text-decoration:none;">
+          🚀 Open 3D Shape Studio in New Tab / Mở công cụ trong tab mới
+        </a>
+      </div>
+    `;
+    container.appendChild(errorBanner);
+
+    // 3. Main Area: Responsive iframe displaying 3D Geometry Lab
+    const frameWrap = document.createElement('div');
+    frameWrap.className = 'lesson-embed-frame-wrap';
+    frameWrap.id = 'game-3d-frame-wrap';
+
+    // Loading State Overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'lesson-embed-loading';
+    loadingOverlay.id = 'game-3d-loading-overlay';
+    loadingOverlay.innerHTML = `
+      <div class="loading-planet-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-core">🎲</div>
+      </div>
+      <h3 style="margin:16px 0 6px;color:#ffffff;font-size:18px;font-weight:900;">
+        Loading 3D Shape Studio... / Đang tải xưởng hình khối 3D...
+      </h3>
+      <p style="margin:0;color:#9bc3f8;font-size:14px;max-width:540px;line-height:1.5;">
+        Đang kết nối công cụ mô phỏng 3D Geometry Lab. Khám phá các hình khối không gian và hình khai triển tương tác.
+      </p>
+    `;
+    frameWrap.appendChild(loadingOverlay);
+
+    // Responsive Iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = 'external-3d-geometry-iframe';
+    iframe.className = 'lesson-embed-iframe';
+    iframe.src = GEOMETRY_3D_LAB_URL;
+    iframe.title = '3D Shape Studio · 3D Geometry Lab | MathLingua AI';
+    iframe.setAttribute('allow', 'fullscreen; autoplay; VR; xr-spatial-tracking; clipboard-write');
+    iframe.setAttribute('loading', 'eager');
+    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+    iframe.setAttribute('tabindex', '0');
+
+    let isIframeLoaded = false;
+
+    iframe.onload = () => {
+      isIframeLoaded = true;
+      if (loadingOverlay && loadingOverlay.parentNode) {
+        loadingOverlay.classList.add('fade-out');
+        setTimeout(() => {
+          if (loadingOverlay.parentNode) loadingOverlay.style.display = 'none';
+        }, 300);
+      }
+    };
+
+    iframe.onerror = () => {
+      if (loadingOverlay) loadingOverlay.style.display = 'none';
+      errorBanner.style.display = 'flex';
+    };
+
+    // Safety timeout: if iframe load takes over 8.5 seconds, display fallback banner with Retry & New Tab
+    setTimeout(() => {
+      if (!isIframeLoaded) {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        errorBanner.style.display = 'flex';
+      }
+    }, 8500);
+
+    // Retry button action
+    errorBanner.querySelector('#btn-retry-3d-iframe')?.addEventListener('click', () => {
+      isIframeLoaded = false;
+      errorBanner.style.display = 'none';
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+        loadingOverlay.classList.remove('fade-out');
+      }
+      iframe.src = GEOMETRY_3D_LAB_URL;
+    });
+
+    frameWrap.appendChild(iframe);
+    container.appendChild(frameWrap);
+    scroll.appendChild(container);
+    root.appendChild(scroll);
+  }
+
+  function renderDecimalFractionsLesson() {
+    root.innerHTML = '';
+
+    const scroll = document.createElement('div');
+    scroll.className = 'stage-scroll lesson-embed-scroll';
+
+    const container = document.createElement('div');
+    container.className = 'lesson-embed-container';
+
+    // 1. Navigation Toolbar with Back button to Fraction (Chapter 1)
+    const backToolbar = document.createElement('div');
+    backToolbar.className = 'lesson-back-toolbar-simple';
+    backToolbar.innerHTML = `
+      <button type="button" class="lesson-back-text-btn" id="btn-back-fraction-df" aria-label="Back to Fraction / Quay lại Phân số" title="Back to Fraction / Quay lại Phân số">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>← Back to Fraction / Quay lại Phân số</span>
+      </button>
+    `;
+
+    // Clicking Back button returns strictly to Fraction topic page (chapter1 / #chapter1)
+    backToolbar.querySelector('#btn-back-fraction-df')?.addEventListener('click', () => {
+      navigate('chapter1');
+    });
+
+    container.appendChild(backToolbar);
+
+    // 2. Fallback / Error banner (hidden initially, shown on iframe load failure or timeout)
+    const errorBanner = document.createElement('div');
+    errorBanner.className = 'lesson-embed-error-banner';
+    errorBanner.id = 'lesson-df-error-banner';
+    errorBanner.style.display = 'none';
+    errorBanner.innerHTML = `
+      <div class="error-banner-content">
+        <span class="error-banner-icon">💡</span>
+        <div class="error-banner-text">
+          <h4>Thông báo kết nối bài học trực tiếp</h4>
+          <p>Nếu bài học tải chậm do chính sách bảo mật trình duyệt hoặc kết nối mạng, bạn có thể nhấn Thử lại hoặc Mở bài học trong tab mới để trải nghiệm đầy đủ.</p>
+        </div>
+      </div>
+      <div class="error-banner-actions">
+        <button type="button" class="action-btn" id="btn-retry-df-iframe">🔄 Thử lại / Retry</button>
+        <a href="${DECIMAL_FRACTIONS_PUBLISHED_LESSON_URL}" target="_blank" rel="noopener noreferrer" class="action-btn primary" style="text-decoration:none;">
+          🚀 Open Lesson in New Tab / Mở bài học trong tab mới
+        </a>
+      </div>
+    `;
+    container.appendChild(errorBanner);
+
+    // 3. Main Lesson Area: Responsive iframe displaying external Vercel lesson app
+    const frameWrap = document.createElement('div');
+    frameWrap.className = 'lesson-embed-frame-wrap';
+    frameWrap.id = 'lesson-df-frame-wrap';
+
+    // Loading State Overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'lesson-embed-loading';
+    loadingOverlay.id = 'lesson-df-loading-overlay';
+    loadingOverlay.innerHTML = `
+      <div class="loading-planet-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-core">🚀</div>
+      </div>
+      <h3 style="margin:16px 0 6px;color:#ffffff;font-size:18px;font-weight:900;">
+        Loading lesson... / Đang tải bài học Phân số thập phân...
+      </h3>
+      <p style="margin:0;color:#9bc3f8;font-size:14px;max-width:540px;line-height:1.5;">
+        Đang kết nối ứng dụng học tập Decimal Fractions. Đầy đủ các phần Explore, Vocab, Structure và Practice.
+      </p>
+    `;
+    frameWrap.appendChild(loadingOverlay);
+
+    // Responsive Iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = 'external-decimal-fractions-iframe';
+    iframe.className = 'lesson-embed-iframe';
+    iframe.src = DECIMAL_FRACTIONS_PUBLISHED_LESSON_URL;
+    iframe.title = 'Decimal Fractions | MathLingua AI';
+    iframe.setAttribute('allow', 'microphone; autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen');
+    iframe.setAttribute('loading', 'eager');
+    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+    iframe.setAttribute('tabindex', '0');
+
+    let isIframeLoaded = false;
+
+    iframe.onload = () => {
+      isIframeLoaded = true;
+      if (loadingOverlay && loadingOverlay.parentNode) {
+        loadingOverlay.classList.add('fade-out');
+        setTimeout(() => {
+          if (loadingOverlay.parentNode) loadingOverlay.style.display = 'none';
+        }, 300);
+      }
+    };
+
+    iframe.onerror = () => {
+      if (loadingOverlay) loadingOverlay.style.display = 'none';
+      errorBanner.style.display = 'flex';
+    };
+
+    // Safety timeout: if iframe load takes over 8.5 seconds, display fallback banner with Retry & New Tab
+    setTimeout(() => {
+      if (!isIframeLoaded) {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        errorBanner.style.display = 'flex';
+      }
+    }, 8500);
+
+    // Retry button action
+    errorBanner.querySelector('#btn-retry-df-iframe')?.addEventListener('click', () => {
+      isIframeLoaded = false;
+      errorBanner.style.display = 'none';
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+        loadingOverlay.classList.remove('fade-out');
+      }
+      iframe.src = DECIMAL_FRACTIONS_PUBLISHED_LESSON_URL;
+    });
+
+    frameWrap.appendChild(iframe);
+    container.appendChild(frameWrap);
+    scroll.appendChild(container);
+    root.appendChild(scroll);
+  }
+
   function renderPage() {
+    document.body.classList.toggle('is-decimal-page', currentRoute === 'chapter2');
+    if (currentRoute === 'lesson_ha_km2') {
+      renderSquareKilometreHectareLesson();
+      return;
+    }
+    if (currentRoute === 'lesson_decimal_fractions') {
+      renderDecimalFractionsLesson();
+      return;
+    }
+    if (currentRoute === 'lesson_mixed_numbers') {
+      renderMixedNumbersEmbed(root, navigate);
+      return;
+    }
+    if (currentRoute === 'game_3d_shapes') {
+      render3DShapeStudioGame();
+      return;
+    }
+    if (currentRoute === 'game_mixed_numbers') {
+      renderMixedNumberAdventureEmbed(root, navigate);
+      return;
+    }
+    if (currentRoute === 'buddy') {
+      renderMathBuddyConversation(root, navigate);
+      return;
+    }
     if (currentRoute === 'chapter4') {
       renderGeometryPage();
       return;
@@ -2652,64 +3473,530 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     root.appendChild(scroll);
 
     if (currentRoute === 'home') {
+      img.setAttribute('data-layout-layer', 'home-bg');
+      img.setAttribute('data-layer-title', 'Nền Trang chủ (Canva Artwork)');
+      img.setAttribute('data-layer-type', 'background');
+
+      const logoImg = document.createElement('img');
+      logoImg.className = 'home-main-logo';
+      logoImg.src = ASSET_MANIFEST.home.logo || '/assets/home/logo.png';
+      logoImg.alt = 'MathLingua AI Grade 5 Logo';
+      logoImg.draggable = false;
+      logoImg.setAttribute('data-layout-layer', 'home-logo');
+      logoImg.setAttribute('data-layer-title', 'Biểu trưng MathLingua AI');
+      logoImg.setAttribute('data-layer-type', 'image');
+      board.appendChild(logoImg);
+
       addHotspot(board, {
-        x: 0.495, y: 0.645, w: 0.265, h: 0.105,
+        x: 0.422, y: 0.795, w: 0.355, h: 0.155,
         route: 'topics',
-        label: 'Bắt đầu hành trình / Start your journey'
+        label: 'Bắt đầu hành trình / Start your journey',
+        buttonImg: ASSET_MANIFEST.home.button || '/assets/home/home-button.png',
+        layerId: 'home-start-btn'
       });
     } else if (currentRoute === 'topics') {
-      // Four topic planets on Topics Library
-      addHotspot(board, { x: 0.345, y: 0.145, w: 0.355, h: 0.315, route: 'chapter1', label: 'Fraction / Phân số' });
-      addHotspot(board, { x: 0.677, y: 0.137, w: 0.31, h: 0.345, route: 'chapter2', label: 'Decimal Numbers / Số thập phân' });
-      addHotspot(board, { x: 0.365, y: 0.48, w: 0.32, h: 0.30, route: 'chapter3', label: 'Ratio and Percentage / Tỉ số và tỉ số phần trăm' });
-      addHotspot(board, { x: 0.70, y: 0.48, w: 0.29, h: 0.31, route: 'chapter4', label: 'Geometry and Measurement / Hình học và đo lường' });
-    } else if (currentRoute === 'mathlab') {
-      const games = [
-        { x: 0.012, y: 0.13, w: 0.33, h: 0.20, game: 'shapes', title: '3D Shape Studio', vi: 'Xưởng hình khối 3D' },
-        { x: 0.35, y: 0.13, w: 0.32, h: 0.20, game: 'mixed', title: 'Mixed Number Adventure', vi: 'Phiêu lưu cùng hỗn số' },
-        { x: 0.67, y: 0.13, w: 0.32, h: 0.20, game: 'mystery', title: 'Mystery Pieces / Math Puzzle', vi: 'Mảnh ghép bí ẩn' },
-        { x: 0.02, y: 0.37, w: 0.28, h: 0.22, game: 'candy', title: 'Candy Stacker', vi: 'Xếp kẹo số thập phân' },
-        { x: 0.31, y: 0.37, w: 0.37, h: 0.22, game: 'dragdrop', title: 'Drag and Drop', vi: 'Kéo thả đúng chỗ' },
-        { x: 0.69, y: 0.37, w: 0.29, h: 0.22, game: 'challenge', title: 'English Math Challenge', vi: 'Thử thách Toán Tiếng Anh' },
+      img.setAttribute('data-layout-layer', 'topics-bg');
+      img.setAttribute('data-layer-title', 'Nền Thư viện chủ đề (Canva Artwork)');
+      img.setAttribute('data-layer-type', 'background');
+
+      // Four topic planet buttons using verified Canva assets
+      const gridZone = document.createElement('div');
+      gridZone.className = 'topics-grid-zone';
+      gridZone.setAttribute('data-layout-layer', 'topics-grid-zone');
+      gridZone.setAttribute('data-layer-title', 'Khu vực 4 chủ đề kiến thức');
+      gridZone.setAttribute('data-layer-type', 'container');
+
+      const grid = document.createElement('div');
+      grid.className = 'topics-planets-grid';
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', 'Bốn hành tinh chủ đề toán lớp 5');
+
+      const topicButtons = [
+        {
+          id: 'btn-fraction',
+          title: 'Fraction (Phân số)',
+          route: 'chapter1',
+          image: '/assets/topics-library/Fraction-button.png',
+          alt: 'Chủ đề Phân số / Fraction'
+        },
+        {
+          id: 'btn-decimals',
+          title: 'Decimal Numbers (Số thập phân)',
+          route: 'chapter2',
+          image: '/assets/topics-library/Decimal-button.png',
+          alt: 'Chủ đề Số thập phân / Decimal Numbers'
+        },
+        {
+          id: 'btn-ratio',
+          title: 'Ratio & Percentage (Tỉ số & Phần trăm)',
+          route: 'chapter3',
+          image: '/assets/topics-library/Ratio-button.png',
+          alt: 'Chủ đề Tỉ số và tỉ số phần trăm / Ratio and Percentage'
+        },
+        {
+          id: 'btn-geometry',
+          title: 'Geometry & Measurement (Hình học & Đo lường)',
+          route: 'chapter4',
+          image: '/assets/topics-library/Geometry-button.png',
+          alt: 'Chủ đề Hình học và đo lường / Geometry and Measurement'
+        }
       ];
-      games.forEach(g => addHotspot(board, { ...g, label: `Start: ${g.title} / ${g.vi}` }));
+
+      topicButtons.forEach(btnSpec => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'topic-planet-btn';
+        btn.setAttribute('data-layout-layer', btnSpec.id);
+        btn.setAttribute('data-layer-title', btnSpec.title);
+        btn.setAttribute('data-layer-type', 'button');
+        btn.setAttribute('data-route', btnSpec.route);
+        btn.setAttribute('aria-label', btnSpec.title);
+        btn.title = btnSpec.title;
+
+        const btnImg = document.createElement('img');
+        btnImg.src = btnSpec.image;
+        btnImg.alt = btnSpec.alt;
+        btnImg.draggable = false;
+        btnImg.loading = 'eager';
+        btn.appendChild(btnImg);
+
+        btn.addEventListener('click', (e) => {
+          if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+          navigate(btnSpec.route);
+        });
+
+        grid.appendChild(btn);
+      });
+
+      gridZone.appendChild(grid);
+      board.appendChild(gridZone);
+    } else if (currentRoute === 'mathlab') {
+      img.setAttribute('data-layout-layer', 'mathlab-bg');
+      img.setAttribute('data-layer-title', 'Nền Math Lab (Canva Space Artwork)');
+      img.setAttribute('data-layer-type', 'background');
+
+      const gridZone = document.createElement('div');
+      gridZone.className = 'mathlab-grid-zone';
+      gridZone.setAttribute('data-layout-layer', 'mathlab-grid-zone');
+      gridZone.setAttribute('data-layer-title', 'Khu vực trò chơi Math Lab');
+      gridZone.setAttribute('data-layer-type', 'container');
+
+      const grid = document.createElement('div');
+      grid.className = 'mathlab-games-grid';
+      grid.setAttribute('role', 'list');
+      grid.setAttribute('aria-label', 'Danh sách trò chơi tương tác Math Lab');
+
+      const games = (ASSET_MANIFEST.mathLab && ASSET_MANIFEST.mathLab.games) ? ASSET_MANIFEST.mathLab.games : [
+        { id: 'ml-game-shapes', gameKey: 'shapes', titleEn: '3D Shape Studio', titleVi: 'Xưởng hình khối 3D', image: '/assets/math-lab/3D-shape-game.png' },
+        { id: 'ml-game-mixed', gameKey: 'mixed', titleEn: 'Mixed Number Adventure', titleVi: 'Phiêu lưu cùng hỗn số', image: '/assets/math-lab/mixed-number-game.png' },
+        { id: 'ml-game-pieces', gameKey: 'mystery', titleEn: 'Mystery Pieces', titleVi: 'Mảnh ghép bí ẩn', image: '/assets/math-lab/pieces-game.png' },
+        { id: 'ml-game-candy', gameKey: 'candy', titleEn: 'Candy Stacker', titleVi: 'Xếp kẹo khối lượng', image: '/assets/math-lab/candy-game.png' },
+        { id: 'ml-game-dragdrop', gameKey: 'dragdrop', titleEn: 'Drag and Drop', titleVi: 'Kéo thả đúng chỗ', image: '/assets/math-lab/drag-drop-game.png' },
+        { id: 'ml-game-ants', gameKey: 'ants', titleEn: 'Ants Food Quest', titleVi: 'Kiến tha mồi', image: '/assets/math-lab/ants-game.png' }
+      ];
+
+      games.forEach(g => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = g.id;
+        btn.className = 'mathlab-game-card';
+        btn.setAttribute('data-layout-layer', g.id);
+        btn.setAttribute('data-layer-title', `${g.titleEn} (${g.titleVi})`);
+        btn.setAttribute('data-layer-type', 'button');
+        btn.setAttribute('aria-label', `Start ${g.titleEn} · ${g.titleVi}`);
+        btn.title = `${g.titleEn} · ${g.titleVi} (Nhấn để Bắt đầu / Click to Start)`;
+
+        const cardImg = document.createElement('img');
+        cardImg.src = g.image;
+        cardImg.alt = `${g.titleEn} · ${g.titleVi}`;
+        cardImg.draggable = false;
+        cardImg.loading = 'eager';
+        btn.appendChild(cardImg);
+
+        btn.addEventListener('click', () => {
+          if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+          if (g.gameKey === 'shapes') {
+            navigate('game_3d_shapes');
+          } else if (g.gameKey === 'mixed') {
+            navigate('game_mixed_numbers');
+          } else {
+            openGame({ game: g.gameKey, title: g.titleEn, vi: g.titleVi });
+          }
+        });
+
+        grid.appendChild(btn);
+      });
+
+      gridZone.appendChild(grid);
+      board.appendChild(gridZone);
     } else if (currentRoute === 'buddy') {
+      img.setAttribute('data-layout-layer', 'buddy-bg');
+      img.setAttribute('data-layer-title', 'Nền MathBuddy AI');
+      img.setAttribute('data-layer-type', 'background');
+
       const vocab = [
-        { x: 0.245, y: 0.20, w: 0.115, h: 0.30, en: 'Geometry', vi: 'Hình học' },
-        { x: 0.36, y: 0.20, w: 0.115, h: 0.30, en: 'Measurement', vi: 'Đo lường' },
-        { x: 0.475, y: 0.20, w: 0.12, h: 0.30, en: 'Decimal Numbers', vi: 'Số thập phân' },
-        { x: 0.245, y: 0.51, w: 0.12, h: 0.29, en: 'Mixed Numbers', vi: 'Hỗn số' },
-        { x: 0.365, y: 0.51, w: 0.115, h: 0.29, en: 'Ratio', vi: 'Tỉ số' },
-        { x: 0.48, y: 0.51, w: 0.12, h: 0.29, en: 'Others', vi: 'Khác' },
+        { x: 0.245, y: 0.20, w: 0.115, h: 0.30, en: 'Geometry', vi: 'Hình học', layerId: 'bud-geo' },
+        { x: 0.36, y: 0.20, w: 0.115, h: 0.30, en: 'Measurement', vi: 'Đo lường', layerId: 'bud-meas' },
+        { x: 0.475, y: 0.20, w: 0.12, h: 0.30, en: 'Decimal Numbers', vi: 'Số thập phân', layerId: 'bud-dec' },
+        { x: 0.245, y: 0.51, w: 0.12, h: 0.29, en: 'Mixed Numbers', vi: 'Hỗn số', layerId: 'bud-mix' },
+        { x: 0.365, y: 0.51, w: 0.115, h: 0.29, en: 'Ratio', vi: 'Tỉ số', layerId: 'bud-ratio' },
+        { x: 0.48, y: 0.51, w: 0.12, h: 0.29, en: 'Others', vi: 'Khác', layerId: 'bud-oth' },
       ];
       vocab.forEach(v => addHotspot(board, { ...v, title: v.en, label: `Math Vocabulary: ${v.en} / ${v.vi}`, action: 'vocab' }));
-      addHotspot(board, { x: 0.64, y: 0.25, w: 0.34, h: 0.28, title: 'Practice with Model Sentences', vi: 'Luyện theo câu mẫu', action: 'sentences', label: 'Practice with Model Sentences / Luyện theo câu mẫu' });
-      addHotspot(board, { x: 0.64, y: 0.535, w: 0.34, h: 0.28, title: 'Math Dialogue', vi: 'Hội thoại Toán học', action: 'dialogue', label: 'Math Dialogue / Hội thoại Toán học' });
+      addHotspot(board, { x: 0.64, y: 0.25, w: 0.34, h: 0.28, title: 'Practice with Model Sentences', vi: 'Luyện theo câu mẫu', action: 'sentences', label: 'Practice with Model Sentences / Luyện theo câu mẫu', layerId: 'bud-sentences' });
+      addHotspot(board, { x: 0.64, y: 0.535, w: 0.34, h: 0.28, title: 'Math Dialogue', vi: 'Hội thoại Toán học', action: 'dialogue', label: 'Math Dialogue / Hội thoại Toán học', layerId: 'bud-dialogue' });
+    } else if (currentRoute === 'chapter1') {
+      img.setAttribute('data-layout-layer', 'chapter1-bg');
+      img.setAttribute('data-layer-title', 'Nền Phân số (Chapter 1 Canva Artwork)');
+      img.setAttribute('data-layer-type', 'background');
+
+      // Back button using verified Canva asset Back-to-Button.png
+      const backBtn = document.createElement('button');
+      backBtn.type = 'button';
+      backBtn.id = 'chapter1-back-btn';
+      backBtn.className = 'chapter-back-btn';
+      backBtn.setAttribute('data-layout-layer', 'chapter1-back-btn');
+      backBtn.setAttribute('data-layer-title', 'Nút Quay lại thư viện');
+      backBtn.setAttribute('data-layer-type', 'button');
+      backBtn.setAttribute('data-route', 'topics');
+      backBtn.setAttribute('aria-label', 'Back to Topics Library / Quay lại thư viện chủ đề');
+      backBtn.title = 'Back to Topics Library / Quay lại thư viện chủ đề';
+
+      const backImg = document.createElement('img');
+      backImg.src = (ASSET_MANIFEST.chapters && ASSET_MANIFEST.chapters.fraction && ASSET_MANIFEST.chapters.fraction.backButton)
+        ? ASSET_MANIFEST.chapters.fraction.backButton
+        : '/assets/topics-library/fraction/Back-to-Button.png';
+      backImg.alt = 'Back to Topics Library';
+      backImg.draggable = false;
+      backImg.loading = 'eager';
+      backBtn.appendChild(backImg);
+
+      backBtn.addEventListener('click', () => {
+        if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+        navigate('topics');
+      });
+      board.appendChild(backBtn);
+
+      // Lesson Units Zone with Mixed Numbers & Decimal Fractions
+      const gridZone = document.createElement('div');
+      gridZone.className = 'fraction-units-zone';
+      gridZone.setAttribute('data-layout-layer', 'chapter1-units-zone');
+      gridZone.setAttribute('data-layer-title', 'Khu vực bài học Phân số');
+      gridZone.setAttribute('data-layer-type', 'container');
+
+      const grid = document.createElement('div');
+      grid.className = 'fraction-units-grid';
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', 'Các bài học chủ đề Phân số');
+
+      const fractionUnits = [
+        {
+          id: 'btn-mixed-numbers',
+          unitKey: 'mixed-numbers',
+          titleEn: 'Mixed Numbers',
+          titleVi: 'Hỗn số',
+          image: '/assets/topics-library/fraction/Mixed-number-button.png',
+          alt: 'Bài học Hỗn số / Mixed Numbers'
+        },
+        {
+          id: 'btn-decimal-fractions',
+          unitKey: 'decimal-fractions',
+          titleEn: 'Decimal Fractions',
+          titleVi: 'Phân số thập phân',
+          image: '/assets/topics-library/fraction/Decimal-fraction-button.png',
+          alt: 'Bài học Phân số thập phân / Decimal Fractions'
+        }
+      ];
+
+      fractionUnits.forEach(u => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = u.id;
+        btn.className = 'fraction-unit-btn';
+        btn.setAttribute('data-layout-layer', u.id);
+        btn.setAttribute('data-layer-title', `${u.titleEn} (${u.titleVi})`);
+        btn.setAttribute('data-layer-type', 'button');
+        btn.setAttribute('aria-label', `${u.titleEn} · ${u.titleVi}`);
+        btn.title = `${u.titleEn} · ${u.titleVi} (Nhấn để Học bài / Click to Learn)`;
+
+        const btnImg = document.createElement('img');
+        btnImg.src = u.image;
+        btnImg.alt = u.alt;
+        btnImg.draggable = false;
+        btnImg.loading = 'eager';
+        btn.appendChild(btnImg);
+
+        btn.addEventListener('click', () => {
+          if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+          if (u.unitKey === 'decimal-fractions') {
+            navigate('lesson_decimal_fractions');
+          } else if (u.unitKey === 'mixed-numbers') {
+            navigate('lesson_mixed_numbers');
+          } else {
+            openLesson({ en: u.titleEn, vi: u.titleVi, unitKey: u.unitKey });
+          }
+        });
+
+        grid.appendChild(btn);
+      });
+
+      gridZone.appendChild(grid);
+      board.appendChild(gridZone);
+    } else if (currentRoute === 'chapter2') {
+      img.setAttribute('data-layout-layer', 'chapter2-bg');
+      img.setAttribute('data-layer-title', 'Nền Số thập phân (Chapter 2 Canva Artwork)');
+      img.setAttribute('data-layer-type', 'background');
+
+      // Back button using verified Canva asset Back-to-Button.png
+      const backBtn = document.createElement('button');
+      backBtn.type = 'button';
+      backBtn.id = 'chapter2-back-btn';
+      backBtn.className = 'chapter-back-btn decimal-back-btn';
+      backBtn.setAttribute('data-layout-layer', 'chapter2-back-btn');
+      backBtn.setAttribute('data-layer-title', 'Nút Quay lại thư viện (Chapter 2)');
+      backBtn.setAttribute('data-layer-type', 'button');
+      backBtn.setAttribute('data-route', 'topics');
+      backBtn.setAttribute('aria-label', 'Back to Topics Library / Quay lại thư viện chủ đề');
+      backBtn.title = 'Back to Topics Library / Quay lại thư viện chủ đề';
+
+      const backImg = document.createElement('img');
+      backImg.src = (ASSET_MANIFEST.chapters && ASSET_MANIFEST.chapters.decimalNumbers && ASSET_MANIFEST.chapters.decimalNumbers.backButton)
+        ? ASSET_MANIFEST.chapters.decimalNumbers.backButton
+        : '/assets/topics-library/decimal-numbers/Back-to-Button.png';
+      backImg.alt = 'Back to Topics Library';
+      backImg.draggable = false;
+      backImg.loading = 'eager';
+      backBtn.appendChild(backImg);
+
+      backBtn.addEventListener('click', () => {
+        if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+        navigate('topics');
+      });
+      board.appendChild(backBtn);
+
+      // Lesson Units Zone with 7 verified Canva buttons
+      const gridZone = document.createElement('div');
+      gridZone.className = 'decimal-units-zone';
+      gridZone.setAttribute('data-layout-layer', 'chapter2-units-zone');
+      gridZone.setAttribute('data-layer-title', 'Khu vực bài học Số thập phân');
+      gridZone.setAttribute('data-layer-type', 'container');
+
+      const grid = document.createElement('div');
+      grid.className = 'decimal-units-grid';
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', 'Các bài học chủ đề Số thập phân / Decimal Numbers Units');
+
+      const decimalUnits = [
+        {
+          id: 'btn-decimal-numbers',
+          unitKey: 'decimal-number',
+          titleEn: 'Decimal Numbers',
+          titleVi: 'Số thập phân',
+          image: '/assets/topics-library/decimal-numbers/decimal-number-button.png',
+          alt: 'Bài 1: Số thập phân / Decimal Numbers'
+        },
+        {
+          id: 'btn-comparing-decimals',
+          unitKey: 'comparing-decimals',
+          titleEn: 'Comparing Decimal Numbers',
+          titleVi: 'So sánh các số thập phân',
+          image: '/assets/topics-library/decimal-numbers/Comparing-Decimal-Numbers-button.png',
+          alt: 'Bài 2: So sánh các số thập phân / Comparing Decimal Numbers'
+        },
+        {
+          id: 'btn-writing-length',
+          unitKey: 'writing-length',
+          titleEn: 'Writing Length Measurements as Decimals',
+          titleVi: 'Viết số đo độ dài dưới dạng số thập phân',
+          image: '/assets/topics-library/decimal-numbers/writing-length-button.png',
+          alt: 'Bài 3: Viết số đo độ dài dưới dạng số thập phân / Writing Length Measurements as Decimals'
+        },
+        {
+          id: 'btn-writing-weight',
+          unitKey: 'writing-weight',
+          titleEn: 'Writing Mass Measurements as Decimals',
+          titleVi: 'Viết số đo khối lượng dưới dạng số thập phân',
+          image: '/assets/topics-library/decimal-numbers/writing-weight-button.png',
+          alt: 'Bài 4: Viết số đo khối lượng dưới dạng số thập phân / Writing Mass Measurements as Decimals'
+        },
+        {
+          id: 'btn-writing-area',
+          unitKey: 'writing-area',
+          titleEn: 'Writing Area Measurements as Decimals',
+          titleVi: 'Viết số đo diện tích dưới dạng số thập phân',
+          image: '/assets/topics-library/decimal-numbers/writing-area-button.png',
+          alt: 'Bài 5: Viết số đo diện tích dưới dạng số thập phân / Writing Area Measurements as Decimals'
+        },
+        {
+          id: 'btn-rounding-decimals',
+          unitKey: 'rounding-decimals',
+          titleEn: 'Rounding Decimal Numbers',
+          titleVi: 'Làm tròn số thập phân',
+          image: '/assets/topics-library/decimal-numbers/rounding-Decimal-Numbers-button.png',
+          alt: 'Bài 6: Làm tròn số thập phân / Rounding Decimal Numbers'
+        },
+        {
+          id: 'btn-operation-decimals',
+          unitKey: 'operations-decimals',
+          titleEn: 'Operations with Decimal Numbers',
+          titleVi: 'Các phép tính với số thập phân',
+          image: '/assets/topics-library/decimal-numbers/operation-Decimal-Numbers-button.png',
+          alt: 'Bài 7: Các phép tính với số thập phân / Operations with Decimal Numbers'
+        }
+      ];
+
+      decimalUnits.forEach(u => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = u.id;
+        btn.className = 'decimal-unit-btn';
+        btn.setAttribute('data-layout-layer', u.id);
+        btn.setAttribute('data-layer-title', `${u.titleEn} (${u.titleVi})`);
+        btn.setAttribute('data-layer-type', 'button');
+        btn.setAttribute('aria-label', `${u.titleEn} · ${u.titleVi}`);
+        btn.title = `${u.titleEn} · ${u.titleVi} (Nhấn để Học bài / Click to Learn)`;
+
+        const btnImg = document.createElement('img');
+        btnImg.className = 'lesson-button-image';
+        btnImg.src = u.image;
+        btnImg.alt = u.alt;
+        btnImg.draggable = false;
+        btnImg.loading = 'eager';
+        btn.appendChild(btnImg);
+
+        btn.addEventListener('click', () => {
+          if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+          openLesson({ en: u.titleEn, vi: u.titleVi, unitKey: u.unitKey });
+        });
+
+        grid.appendChild(btn);
+      });
+
+      gridZone.appendChild(grid);
+      board.appendChild(gridZone);
+    } else if (currentRoute === 'chapter3') {
+      img.setAttribute('data-layout-layer', 'chapter3-bg');
+      img.setAttribute('data-layer-title', 'Nền Tỉ số và Phần trăm (Chapter 3 Canva Artwork)');
+      img.setAttribute('data-layer-type', 'background');
+
+      // Back button using verified Canva asset Back-to-Button.png
+      const backBtn = document.createElement('button');
+      backBtn.type = 'button';
+      backBtn.id = 'chapter3-back-btn';
+      backBtn.className = 'chapter-back-btn ratio-back-btn';
+      backBtn.setAttribute('data-layout-layer', 'chapter3-back-btn');
+      backBtn.setAttribute('data-layer-title', 'Nút Quay lại thư viện (Chapter 3)');
+      backBtn.setAttribute('data-layer-type', 'button');
+      backBtn.setAttribute('data-route', 'topics');
+      backBtn.setAttribute('aria-label', 'Back to Topics Library / Quay lại thư viện chủ đề');
+      backBtn.title = 'Back to Topics Library / Quay lại thư viện chủ đề';
+
+      const backImg = document.createElement('img');
+      backImg.src = (ASSET_MANIFEST.chapters && ASSET_MANIFEST.chapters.ratioPercentage && ASSET_MANIFEST.chapters.ratioPercentage.backButton)
+        ? ASSET_MANIFEST.chapters.ratioPercentage.backButton
+        : '/assets/topics-library/ratio-percentage/Back-to-Button.png';
+      backImg.alt = 'Back to Topics Library';
+      backImg.draggable = false;
+      backImg.loading = 'eager';
+      backBtn.appendChild(backImg);
+
+      backBtn.addEventListener('click', () => {
+        if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+        navigate('topics');
+      });
+      board.appendChild(backBtn);
+
+      // Lesson Units Zone with 5 verified Canva buttons
+      const gridZone = document.createElement('div');
+      gridZone.className = 'ratio-units-zone';
+      gridZone.setAttribute('data-layout-layer', 'chapter3-units-zone');
+      gridZone.setAttribute('data-layer-title', 'Khu vực bài học Tỉ số và Phần trăm');
+      gridZone.setAttribute('data-layer-type', 'container');
+
+      const grid = document.createElement('div');
+      grid.className = 'ratio-units-grid';
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', 'Các bài học chủ đề Tỉ số và Phần trăm / Ratio and Percentage Units');
+
+      const ratioUnits = (ASSET_MANIFEST.chapters && ASSET_MANIFEST.chapters.ratioPercentage && ASSET_MANIFEST.chapters.ratioPercentage.units)
+        ? ASSET_MANIFEST.chapters.ratioPercentage.units
+        : [
+          { id: 'btn-c3-ratio', unitKey: 'ratio', titleEn: 'Ratio', titleVi: 'Tỉ số', image: '/assets/topics-library/ratio-percentage/ratio-button.png', alt: 'Bài 1: Tỉ số / Ratio' },
+          { id: 'btn-c3-word-ratio', unitKey: 'word-problems-ratio', titleEn: 'Word Problems about Ratio', titleVi: 'Bài toán về tỉ số', image: '/assets/topics-library/ratio-percentage/word-ratio-button.png', alt: 'Bài 2: Bài toán về tỉ số / Word Problems about Ratio' },
+          { id: 'btn-c3-percentage', unitKey: 'percentage', titleEn: 'Percentage', titleVi: 'Tỉ số phần trăm', image: '/assets/topics-library/ratio-percentage/percent-button.png', alt: 'Bài 3: Tỉ số phần trăm / Percentage' },
+          { id: 'btn-c3-percentage-of-number', unitKey: 'percentage-of-number', titleEn: 'Percentage of a Number', titleVi: 'Tìm giá trị phần trăm của một số', image: '/assets/topics-library/ratio-percentage/percent-number-button.png', alt: 'Bài 4: Tìm giá trị phần trăm của một số / Percentage of a Number' },
+          { id: 'btn-c3-map-scale', unitKey: 'map-scale', titleEn: 'Map Scale', titleVi: 'Tỉ lệ bản đồ', image: '/assets/topics-library/ratio-percentage/map-scale-button.png', alt: 'Bài 5: Tỉ lệ bản đồ / Map Scale' }
+        ];
+
+      ratioUnits.forEach(u => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = u.id;
+        btn.className = 'ratio-unit-btn';
+        btn.setAttribute('data-layout-layer', u.id);
+        btn.setAttribute('data-layer-title', `${u.titleEn} (${u.titleVi})`);
+        btn.setAttribute('data-layer-type', 'button');
+        btn.setAttribute('aria-label', `${u.titleEn} · ${u.titleVi}`);
+        btn.title = `${u.titleEn} · ${u.titleVi} (Nhấn để Học bài / Click to Learn)`;
+
+        const btnImg = document.createElement('img');
+        btnImg.src = u.image;
+        btnImg.alt = u.alt;
+        btnImg.draggable = false;
+        btnImg.loading = 'eager';
+        btn.appendChild(btnImg);
+
+        btn.addEventListener('click', () => {
+          if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
+          openLesson({ en: u.titleEn, vi: u.titleVi, unitKey: u.unitKey });
+        });
+
+        grid.appendChild(btn);
+      });
+
+      gridZone.appendChild(grid);
+      board.appendChild(gridZone);
     } else {
-      // Chapters 1, 2, 3
-      const backButtonImg = currentRoute === 'chapter1'
-        ? '/assets/topics-library/fraction/Back-to-Button.png'
-        : currentRoute === 'chapter2'
-        ? '/assets/topics-library/decimal-numbers/Back-to-Button.png'
-        : null;
+      // General Fallback
+      img.setAttribute('data-layout-layer', `${currentRoute}-bg`);
+      img.setAttribute('data-layer-title', `Nền ${PAGE_META[currentRoute]?.alt || currentRoute}`);
+      img.setAttribute('data-layer-type', 'background');
 
       addHotspot(board, {
         x: 0.009, y: 0.112, w: 0.135, h: 0.062,
         route: 'topics',
-        className: backButtonImg ? '' : 'back-visible',
-        buttonImg: backButtonImg,
-        visibleText: backButtonImg ? '' : '<span class="back-arrow">‹</span><span>Back to<br>Topics Library</span>',
-        label: 'Back to Topics Library / Quay lại thư viện chủ đề'
+        className: 'back-visible',
+        visibleText: '<span class="back-arrow">‹</span><span>Back to<br>Topics Library</span>',
+        label: 'Back to Topics Library / Quay lại thư viện chủ đề',
+        layerId: `${currentRoute}-back-btn`
       });
 
-      (lessonData[currentRoute] || []).forEach(l => {
+      (lessonData[currentRoute] || []).forEach((l, idx) => {
         addHotspot(board, {
           ...l,
           label: `${l.en} / ${l.vi}`,
-          action: 'lesson'
+          action: 'lesson',
+          layerId: `${currentRoute}-unit-${idx + 1}`
         });
       });
     }
+
+    // In-situ layout editor floating trigger for Admin and Teacher
+    if (currentUserProfile && (currentUserProfile.isAdmin || currentUserProfile.isTeacher) && currentRoute !== 'admin') {
+      const editLayoutBar = document.createElement('div');
+      editLayoutBar.className = 'vle-floating-trigger';
+      editLayoutBar.innerHTML = `
+        <button type="button" class="vle-tool-btn" id="btn-in-situ-layout-editor" style="background:#09255e;border:1.5px solid #00e5ff;color:#00e5ff;box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+          🎨 Chỉnh sửa giao diện / Edit Layout
+        </button>
+      `;
+      editLayoutBar.querySelector('#btn-in-situ-layout-editor')?.addEventListener('click', () => {
+        openVisualLayoutEditor();
+      });
+      scroll.appendChild(editLayoutBar);
+    }
+
+    applySavedPageLayout(currentRoute, Boolean(currentUserProfile && (currentUserProfile.isAdmin || currentUserProfile.isTeacher)));
   }
 
   function runHotspot(spec) {
@@ -3197,111 +4484,66 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
 
   function openGame(spec) {
     if (spec.game === 'shapes') {
-      openModal({
-        title: spec.title,
-        subtitle: spec.vi,
-        kicker: 'Math Lab · Khám phá Toán học',
-        content: `
-          <div class="shape-demo">
-            <div class="cube-scene">
-              <div class="cube3d">
-                <div class="face front"></div>
-                <div class="face back"></div>
-                <div class="face right"></div>
-                <div class="face left"></div>
-                <div class="face top"></div>
-                <div class="face bottom"></div>
-              </div>
-            </div>
-            <div>
-              <strong>Explore a cube · Khám phá hình lập phương</strong>
-              <p>Quan sát 6 mặt, 12 cạnh và 8 đỉnh của hình lập phương.</p>
-              <p>Mô hình 3D tương tác sống động giúp học sinh trực quan hóa hình khối không gian.</p>
-            </div>
-          </div>`,
-        actions: '<button type="button" class="action-btn primary" data-close-modal>Finish · Đóng</button>'
-      });
-      if (currentUser) {
-        saveStudentProgress({
-          topicId: 'mathlab',
-          unitId: 'shapes',
-          titleEn: spec.title,
-          titleVi: spec.vi,
-          score: 100,
-          isCorrect: true,
-          status: 'completed',
-          skills: ['3D Shapes', 'Cube Visualization']
-        }).catch(err => console.warn('Progress save failed:', err));
-      }
+      navigate('game_3d_shapes');
       return;
     }
     if (spec.game === 'mixed') {
-      openQuiz({
-        topicId: 'mathlab',
-        unitId: 'mixed',
-        title: spec.title,
-        subtitle: spec.vi,
-        kicker: 'Mixed Number Adventure · Trò chơi mẫu',
-        question: 'Which mixed number is equal to 7/4? / Hỗn số nào bằng 7/4?',
-        choices: ['1 1/4', '1 3/4', '2 1/4', '3/4'],
-        correct: 1,
-        explanation: '7/4 = 4/4 + 3/4 = 1 3/4. / Bảy phần tư bằng một và ba phần tư.'
-      });
+      navigate('game_mixed_numbers');
       return;
     }
     if (spec.game === 'mystery') {
       openQuiz({
         topicId: 'mathlab',
-        unitId: 'mystery',
-        title: spec.title,
-        subtitle: spec.vi,
-        kicker: 'Math Puzzle · Trò chơi mẫu',
-        question: 'What comes next: 2, 4, 8, 16, …? / Số nào tiếp theo?',
-        choices: ['20', '24', '32', '30'],
-        correct: 2,
-        explanation: 'Mỗi số được nhân với 2, nên số tiếp theo là 32.'
+        unitId: 'mystery-pieces',
+        title: spec.title || 'Mystery Pieces',
+        subtitle: spec.vi || 'Mảnh ghép bí ẩn',
+        kicker: 'Math Lab · Number Pattern & Logic Puzzle',
+        question: 'Find the mystery number: 2, 4, 8, 16, [ ? ] / Tìm số bí ẩn tiếp theo trong dãy số?',
+        choices: ['32 (Nhân 2 qua từng bước)', '24', '30', '20'],
+        correct: 0,
+        explanation: 'Rule: Multiply by 2 at each step. 16 × 2 = 32! / Quy luật: Mỗi số sau gấp 2 lần số trước. 16 × 2 = 32!'
       });
       return;
     }
     if (spec.game === 'dragdrop') {
       openQuiz({
         topicId: 'mathlab',
-        unitId: 'dragdrop',
-        title: spec.title,
-        subtitle: spec.vi,
-        kicker: 'Drag and Drop · Trò chơi mẫu',
-        question: 'Match the word “cube” with its Vietnamese meaning. / Ghép từ “cube” với nghĩa tiếng Việt.',
-        choices: ['Hình cầu', 'Hình lập phương', 'Hình nón', 'Hình trụ'],
-        correct: 1,
-        explanation: 'Cube means hình lập phương. / Cube có nghĩa là hình lập phương.'
+        unitId: 'drag-and-drop',
+        title: spec.title || 'Drag and Drop',
+        subtitle: spec.vi || 'Kéo thả đúng chỗ',
+        kicker: 'Math Lab · Shape & Vocabulary Match',
+        question: 'Match the geometric term: Which 3D shape has 6 identical square faces? / Hình khối 3D nào có 6 mặt hình vuông bằng nhau?',
+        choices: ['Cube (Hình lập phương)', 'Cylinder (Hình trụ)', 'Cone (Hình nón)', 'Sphere (Hình cầu)'],
+        correct: 0,
+        explanation: 'A cube has 6 identical square faces, 12 equal edges, and 8 vertices. / Hình lập phương có đúng 6 mặt hình vuông bằng nhau, 12 cạnh và 8 đỉnh.'
       });
       return;
     }
     if (spec.game === 'challenge' || spec.game === 'ants') {
       openQuiz({
         topicId: 'mathlab',
-        unitId: 'challenge',
-        title: spec.title || 'English Math Challenge',
-        subtitle: spec.vi || 'Thử thách Toán Tiếng Anh',
-        kicker: 'Math Lab · English Math Challenge',
-        question: 'An ant crawls 60 metres in 3 minutes. What is its speed? / Một chú kiến bò được 60 mét trong 3 phút. Vận tốc của chú kiến là bao nhiêu?',
-        choices: ['20 m/min', '180 m/min', '15 m/min', '30 m/min'],
+        unitId: 'ants-food-quest',
+        title: spec.title || 'Ants Food Quest',
+        subtitle: spec.vi || 'Kiến tha mồi',
+        kicker: 'Math Lab · Speed & Motion Challenge',
+        question: 'An ant carries a golden corn kernel 60 metres in 3 minutes. What is its crawling speed? / Chú kiến tha hạt bắp bò được 60 mét trong 3 phút. Vận tốc bò của chú kiến là bao nhiêu?',
+        choices: ['20 m/min (20 mét/phút)', '180 m/min (180 mét/phút)', '15 m/min (15 mét/phút)', '30 m/min (30 mét/phút)'],
         correct: 0,
-        explanation: 'Speed = Distance / Time = 60 / 3 = 20 m/minute. / Vận tốc = Quãng đường : Thời gian = 60 : 3 = 20 m/phút.'
+        explanation: 'Formula: Speed = Distance : Time = 60 : 3 = 20 m/minute. / Công thức: Vận tốc = Quãng đường : Thời gian = 60 : 3 = 20 mét/phút.'
       });
       return;
     }
     if (spec.game === 'candy') {
       openQuiz({
         topicId: 'mathlab',
-        unitId: 'candy',
-        title: spec.title,
-        subtitle: spec.vi,
-        kicker: 'Math Lab · Trò chơi mẫu',
-        question: 'Which number is greater? 0.7 or 0.65? / Số nào lớn hơn?',
-        choices: ['0.7', '0.65', 'They are equal / Bằng nhau', 'Not enough information / Chưa đủ thông tin'],
+        unitId: 'candy-stacker',
+        title: spec.title || 'Candy Stacker',
+        subtitle: spec.vi || 'Xếp kẹo khối lượng',
+        kicker: 'Math Lab · Decimal & Mass Challenge',
+        question: 'Which candy jar is heavier? / Hũ kẹo nào nặng hơn?',
+        choices: ['Jar A: 0.8 kg (800g)', 'Jar B: 0.75 kg (750g)', 'Both are equal / Bằng nhau', 'Cannot compare / Chưa đủ thông tin'],
         correct: 0,
-        explanation: '0.7 = 0.70, and 0.70 > 0.65. / 0,70 lớn hơn 0,65.'
+        explanation: '0.8 kg = 0.80 kg = 800g, which is greater than 0.75 kg (750g). / 0,8 kg = 800g lớn hơn 0,75 kg = 750g.'
       });
       return;
     }
@@ -3321,7 +4563,119 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
   function openLesson(spec) {
     let quiz;
     const str = (spec.en + ' ' + spec.vi).toLowerCase();
-    if (str.includes('mixed') || str.includes('hỗn số') || str.includes('fraction') || str.includes('phân số')) {
+    const key = spec.unitKey || '';
+    if (key === 'decimal-fractions' || str.includes('decimal fraction') || str.includes('phân số thập phân')) {
+      navigate('lesson_decimal_fractions');
+      return;
+    } else if (key === 'mixed-numbers' || str.includes('mixed') || str.includes('hỗn số')) {
+      navigate('lesson_mixed_numbers');
+      return;
+    } else if (key === 'decimal-number' || str.includes('decimal numbers') || str.includes('số thập phân')) {
+      quiz = {
+        title: spec.en || 'Decimal Numbers',
+        subtitle: spec.vi || 'Số thập phân',
+        kicker: 'Chapter 2: Decimal Numbers · Số thập phân',
+        question: 'In the decimal 35.84, which digit is in the tenths place? / Trong số thập phân 35,84, chữ số nào ở hàng phần mười?',
+        choices: [
+          '8 (Chữ số 8 - hàng phần mười)',
+          '4 (Chữ số 4 - hàng phần trăm)',
+          '5 (Chữ số 5 - hàng đơn vị)',
+          '3 (Chữ số 3 - hàng chục)'
+        ],
+        correct: 0,
+        explanation: 'In 35.84, the whole part is 35 and the fractional part is .84. The tenths digit is 8 (8/10 = 0.8). / Trong số 35,84, phần nguyên là 35 và phần thập phân gồm 8 phần mười, 4 phần trăm. Chữ số hàng phần mười là 8.'
+      };
+    } else if (key === 'comparing-decimals' || str.includes('comparing decimal') || str.includes('so sánh các số thập phân')) {
+      quiz = {
+        title: spec.en || 'Comparing Decimal Numbers',
+        subtitle: spec.vi || 'So sánh các số thập phân',
+        kicker: 'Chapter 2: Decimal Numbers · Số thập phân',
+        question: 'Which comparison between decimals is correct? / Phép so sánh nào dưới đây là đúng?',
+        choices: [
+          '7.65 > 7.59 (Vì 6 phần mười > 5 phần mười)',
+          '7.65 < 7.59 (Bé hơn)',
+          '3.8 = 3.08 (Bằng nhau)',
+          '0.4 < 0.04 (Bé hơn)'
+        ],
+        correct: 0,
+        explanation: 'Both whole parts equal 7; compare tenths place: 6 tenths > 5 tenths, so 7.65 > 7.59. / Phần nguyên bằng 7; so sánh chữ số ở hàng phần mười: 6 > 5 nên 7,65 > 7,59.'
+      };
+    } else if (key === 'writing-length' || str.includes('length') || str.includes('độ dài')) {
+      quiz = {
+        title: spec.en || 'Writing Length Measurements as Decimals',
+        subtitle: spec.vi || 'Viết số đo độ dài dưới dạng số thập phân',
+        kicker: 'Chapter 2: Decimal Numbers · Số thập phân',
+        question: 'Write 4 m 25 cm as a decimal in metres: / Viết số đo 4 m 25 cm dưới dạng số thập phân có đơn vị mét:',
+        choices: [
+          '4.25 m (Bốn phẩy hai mươi lăm mét)',
+          '42.5 m (Bốn mươi hai phẩy năm mét)',
+          '4.025 m (Bốn phẩy không hai lăm mét)',
+          '425 m (Bốn trăm hai mươi lăm mét)'
+        ],
+        correct: 0,
+        explanation: '1 m = 100 cm -> 25 cm = 25/100 m = 0.25 m. Therefore 4 m 25 cm = 4.25 m. / 1 m = 100 cm nên 25 cm = 25/100 m = 0,25 m. Vậy 4 m 25 cm = 4,25 m.'
+      };
+    } else if (key === 'writing-weight' || key === 'writing-mass' || str.includes('mass') || str.includes('weight') || str.includes('khối lượng')) {
+      quiz = {
+        title: spec.en || 'Writing Mass Measurements as Decimals',
+        subtitle: spec.vi || 'Viết số đo khối lượng dưới dạng số thập phân',
+        kicker: 'Chapter 2: Decimal Numbers · Số thập phân',
+        question: 'Write 3 kg 75 g as a decimal in kilograms: / Viết số đo 3 kg 75 g dưới dạng số thập phân có đơn vị ki-lô-gam:',
+        choices: [
+          '3.075 kg (Ba phẩy không bảy mươi lăm kg)',
+          '3.75 kg (Ba phẩy bảy mươi lăm kg)',
+          '37.5 kg (Ba mươi bảy phẩy năm kg)',
+          '0.375 kg (Không phẩy ba trăm bảy lăm kg)'
+        ],
+        correct: 0,
+        explanation: '1 kg = 1,000 g -> 75 g = 75/1,000 kg = 0.075 kg. Therefore 3 kg 75 g = 3.075 kg. / 1 kg = 1 000 g nên 75 g = 75/1 000 kg = 0,075 kg. Vậy 3 kg 75 g = 3,075 kg.'
+      };
+    } else if (key === 'writing-area' || str.includes('area') || str.includes('diện tích')) {
+      quiz = {
+        title: spec.en || 'Writing Area Measurements as Decimals',
+        subtitle: spec.vi || 'Viết số đo diện tích dưới dạng số thập phân',
+        kicker: 'Chapter 2: Decimal Numbers · Số thập phân',
+        question: 'Write 6 m² 8 dm² as a decimal in square metres: / Viết 6 m² 8 dm² dưới dạng số thập phân có đơn vị mét vuông:',
+        choices: [
+          '6.08 m² (Sáu phẩy không tám mét vuông)',
+          '6.8 m² (Sáu phẩy tám mét vuông)',
+          '68 m² (Sáu mươi tám mét vuông)',
+          '0.68 m² (Không phẩy sáu mươi tám mét vuông)'
+        ],
+        correct: 0,
+        explanation: '1 m² = 100 dm² -> 8 dm² = 8/100 m² = 0.08 m². Therefore 6 m² 8 dm² = 6.08 m². / 1 m² = 100 dm² nên 8 dm² = 8/100 m² = 0,08 m². Vậy 6 m² 8 dm² = 6,08 m².'
+      };
+    } else if (key === 'rounding-decimals' || str.includes('rounding') || str.includes('làm tròn')) {
+      quiz = {
+        title: spec.en || 'Rounding Decimal Numbers',
+        subtitle: spec.vi || 'Làm tròn số thập phân',
+        kicker: 'Chapter 2: Decimal Numbers · Số thập phân',
+        question: 'Round 18.36 to the nearest tenth: / Làm tròn số 18,36 đến hàng phần mười (chữ số thập phân thứ nhất):',
+        choices: [
+          '18.4 (Làm tròn lên vì hàng phần trăm là 6 ≥ 5)',
+          '18.3 (Giữ nguyên hàng phần mười)',
+          '18.0 (Làm tròn đến hàng đơn vị)',
+          '19.0 (Làm tròn lên số nguyên)'
+        ],
+        correct: 0,
+        explanation: 'The hundredths digit is 6 (6 >= 5), so increase tenths digit 3 by 1: 18.36 rounds to 18.4. / Chữ số sau hàng phần mười là chữ số 6 (6 ≥ 5) nên ta cộng thêm 1 vào chữ số 3: 18,36 làm tròn thành 18,4.'
+      };
+    } else if (key === 'operations-decimals' || str.includes('operation') || str.includes('phép tính')) {
+      quiz = {
+        title: spec.en || 'Operations with Decimal Numbers',
+        subtitle: spec.vi || 'Các phép tính với số thập phân',
+        kicker: 'Chapter 2: Decimal Numbers · Số thập phân',
+        question: 'Calculate: 15.6 + 4.28 = ? / Tính: 15,6 + 4,28 = ?',
+        choices: [
+          '19.88 (Mười chín phẩy tám mươi tám)',
+          '19.68 (Mười chín phẩy sáu mươi tám)',
+          '19.84 (Mười chín phẩy tám mươi tư)',
+          '20.88 (Hai mươi phẩy tám mươi tám)'
+        ],
+        correct: 0,
+        explanation: 'Align decimal points: 15.60 + 4.28 = 19.88. / Đặt tính thẳng cột dấu phẩy: 15,60 + 4,28 = 19,88.'
+      };
+    } else if (str.includes('fraction') || str.includes('phân số')) {
       quiz = {
         title: spec.en,
         subtitle: spec.vi,
@@ -3331,7 +4685,7 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
         correct: 1,
         explanation: '7/4 = 4/4 + 3/4 = 1 3/4. / Bảy phần tư bằng một và ba phần tư.'
       };
-    } else if (str.includes('decimal') || str.includes('thập phân') || str.includes('rounding') || str.includes('operations')) {
+    } else if (str.includes('decimal') || str.includes('thập phân')) {
       quiz = {
         title: spec.en,
         subtitle: spec.vi,
@@ -3341,15 +4695,80 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
         correct: 0,
         explanation: 'Both whole parts are 4; in the tenths place, 3 > 2. / Hai phần nguyên bằng 4; chữ số hàng phần mười có 3 > 2.'
       };
-    } else if (str.includes('ratio') || str.includes('tỉ số')) {
+    } else if (key === 'ratio' || (str.includes('ratio') && !str.includes('word') && !str.includes('bài toán') && !str.includes('percent'))) {
       quiz = {
-        title: spec.en,
-        subtitle: spec.vi,
-        kicker: 'Lesson Preview · Xem trước bài học',
-        question: 'There are 3 red balls and 5 blue balls. What is the ratio of red to blue? / Tỉ số bóng đỏ so với bóng xanh là gì?',
-        choices: ['3:5', '5:3', '3:8', '8:3'],
+        title: spec.en || 'Ratio',
+        subtitle: spec.vi || 'Tỉ số',
+        kicker: 'Chapter 3: Ratio and Percentage · Tỉ số và tỉ số phần trăm',
+        question: 'In a class, there are 15 boys and 20 girls. What is the simplified ratio of boys to girls? / Trong một lớp học có 15 bạn nam và 20 bạn nữ. Tỉ số rút gọn giữa số bạn nam và số bạn nữ là:',
+        choices: [
+          '3 : 4 (3 phần 4)',
+          '4 : 3 (4 phần 3)',
+          '3 : 7 (3 phần 7)',
+          '15 : 35 (15 phần 35)'
+        ],
         correct: 0,
-        explanation: 'There are 3 red balls for every 5 blue balls, so the ratio is 3:5.'
+        explanation: 'The ratio of boys to girls is 15 : 20 = 15/20 = 3/4. Therefore the ratio is 3 : 4. / Tỉ số giữa số bạn nam và số bạn nữ là 15 : 20 = 3/4 (rút gọn bằng cách chia cả tử và mẫu cho 5).'
+      };
+    } else if (key === 'word-problems-ratio' || str.includes('word') || str.includes('bài toán')) {
+      quiz = {
+        title: spec.en || 'Word Problems about Ratio',
+        subtitle: spec.vi || 'Bài toán về tỉ số',
+        kicker: 'Chapter 3: Ratio and Percentage · Tỉ số và tỉ số phần trăm',
+        question: 'The sum of two numbers is 45. Their ratio is 2 : 3. What is the smaller number? / Tổng của hai số là 45. Tỉ số của hai số là 2 : 3. Số bé là:',
+        choices: [
+          '18 (Số bé là 18)',
+          '27 (Số lớn là 27)',
+          '15 (Mười lăm)',
+          '20 (Hai mươi)'
+        ],
+        correct: 0,
+        explanation: 'Total parts: 2 + 3 = 5 parts. Value of 1 part: 45 ÷ 5 = 9. Smaller number: 9 × 2 = 18. / Tổng số phần bằng nhau: 2 + 3 = 5 (phần). Giá trị 1 phần: 45 : 5 = 9. Số bé là: 9 × 2 = 18.'
+      };
+    } else if (key === 'percentage' || (str.includes('percentage') && !str.includes('number') && !str.includes('giá trị')) || str === 'percent') {
+      quiz = {
+        title: spec.en || 'Percentage',
+        subtitle: spec.vi || 'Tỉ số phần trăm',
+        kicker: 'Chapter 3: Ratio and Percentage · Tỉ số và tỉ số phần trăm',
+        question: 'Convert the fraction 3/4 into a percentage: / Viết phân số 3/4 dưới dạng tỉ số phần trăm:',
+        choices: [
+          '75% (Bảy mươi lăm phần trăm)',
+          '7.5% (Bảy phẩy năm phần trăm)',
+          '34% (Ba mươi tư phần trăm)',
+          '80% (Tám mươi phần trăm)'
+        ],
+        correct: 0,
+        explanation: '3/4 = (3 × 25) / (4 × 25) = 75/100 = 75% (or 3 ÷ 4 = 0.75 = 75%). / 3/4 = 75/100 = 75% (hoặc 3 : 4 = 0,75 = 75%).'
+      };
+    } else if (key === 'percentage-of-number' || str.includes('percentage of a number') || str.includes('giá trị phần trăm') || str.includes('phần trăm của')) {
+      quiz = {
+        title: spec.en || 'Percentage of a Number',
+        subtitle: spec.vi || 'Tìm giá trị phần trăm của một số',
+        kicker: 'Chapter 3: Ratio and Percentage · Tỉ số và tỉ số phần trăm',
+        question: 'Find 25% of 160: / Tìm 25% của 160:',
+        choices: [
+          '40 (Bốn mươi)',
+          '35 (Ba mươi lăm)',
+          '45 (Bốn mươi lăm)',
+          '32 (Ba mươi hai)'
+        ],
+        correct: 0,
+        explanation: '25% of 160 = 160 × 25 ÷ 100 = 40 (or 160 ÷ 4 = 40). / 25% của 160 là: 160 × 25 : 100 = 40 (hoặc 160 : 4 = 40).'
+      };
+    } else if (key === 'map-scale' || str.includes('map scale') || str.includes('tỉ lệ bản đồ')) {
+      quiz = {
+        title: spec.en || 'Map Scale',
+        subtitle: spec.vi || 'Tỉ lệ bản đồ',
+        kicker: 'Chapter 3: Ratio and Percentage · Tỉ số và tỉ số phần trăm',
+        question: 'On a map with a scale of 1 : 100,000, the distance between two towns is 3 cm. What is the actual distance in kilometres? / Trên bản đồ tỉ lệ 1 : 100 000, khoảng cách giữa hai thị trấn là 3 cm. Khoảng cách thực tế là bao nhiêu ki-lô-mét?',
+        choices: [
+          '3 km (Ba ki-lô-mét)',
+          '30 km (Ba mươi km)',
+          '0.3 km (Không phẩy ba km)',
+          '300 km (Ba trăm km)'
+        ],
+        correct: 0,
+        explanation: 'Actual distance = 3 cm × 100,000 = 300,000 cm = 3,000 m = 3 km. / Khoảng cách thực tế là: 3 × 100 000 = 300 000 cm = 3 000 m = 3 km.'
       };
     } else {
       quiz = {
@@ -3380,7 +4799,15 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
           ${q.choices.map((c, i) => `<button type="button" class="choice-btn" data-choice="${i}">${c}</button>`).join('')}
         </div>
         <div id="quiz-feedback" class="answer-feedback" aria-live="polite"></div>`,
-      actions: '<button type="button" class="action-btn" data-close-modal>Close · Đóng</button>'
+      actions: q.actions || (q.topicId === 'mathlab'
+        ? '<button type="button" class="action-btn primary" data-close-modal>🔙 Quay lại Math Lab / Back to Math Lab</button>'
+        : (q.topicId === 'chapter1'
+          ? '<button type="button" class="action-btn primary" data-close-modal>🔙 Quay lại Phân số / Back to Fraction</button>'
+          : (q.topicId === 'chapter2'
+            ? '<button type="button" class="action-btn primary" data-close-modal>🔙 Quay lại Số thập phân / Back to Decimal Numbers</button>'
+            : (q.topicId === 'chapter3'
+              ? '<button type="button" class="action-btn primary" data-close-modal>🔙 Quay lại Tỉ số & Phần trăm / Back to Ratio & Percentage</button>'
+              : '<button type="button" class="action-btn" data-close-modal>Close · Đóng</button>'))))
     });
 
     modalRoot.querySelectorAll('[data-choice]').forEach(btn => btn.addEventListener('click', () => {
@@ -3490,8 +4917,31 @@ import { AVATAR_PRESETS, renderAvatarSvg } from './src/utils/avatars.js';
     }
   });
 
+  // Dismiss menus on outside click
+  window.addEventListener('click', (e) => {
+    let needsRender = false;
+    if (isUserMenuOpen && !e.target.closest('#nav-user-cluster')) {
+      isUserMenuOpen = false;
+      needsRender = true;
+    }
+    if (isMobileMenuOpen && !e.target.closest('.nav-mobile-toggle') && !e.target.closest('.nav-mobile-drawer')) {
+      isMobileMenuOpen = false;
+      needsRender = true;
+    }
+    if (needsRender) renderNav();
+  });
+
+  // Automatically close mobile menu when expanding to tablet/desktop
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 768 && isMobileMenuOpen) {
+      isMobileMenuOpen = false;
+      renderNav();
+    }
+  });
+
   // Initialize
   currentRoute = currentHashRoute();
+  initBgMusic();
   renderNav();
   renderPage();
   initDebugMode();

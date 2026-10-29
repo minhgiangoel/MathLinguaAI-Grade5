@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chủ đề: Hình khai triển</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { margin: 0; overflow: hidden; background-color: #050505; color: #e5e7eb; font-family: 'Inter', sans-serif; touch-action: none; }
+        canvas { display: block; }
+        .glass-panel { background: rgba(15, 15, 15, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .input-dark { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; outline: none; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 100%; }
+        .range-slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); outline: none; margin-top: 8px; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #6366f1; cursor: pointer; border: 2px solid #fff; }
+        .toggle-btn { transition: all 0.2s ease; font-size: 8px; font-weight: 700; text-transform: uppercase; padding: 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #9ca3af; }
+        .toggle-btn.active { background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.5); color: #818cf8; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="fixed left-4 top-4 w-64 glass-panel rounded-xl p-4 z-50 max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar">
+    <div class="flex items-center mb-4 border-b border-white/5 pb-2">
+        <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-2 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
+        <h2 class="text-white text-[10px] font-black tracking-widest uppercase">Chủ đề: Hình khai triển</h2>
+    </div>
+
+    <!-- Loại hình học & Kích thước -->
+    <div class="mb-4 space-y-3">
+        <div class="space-y-1">
+            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Cấu hình khối</span>
+            <select id="shape-type" onchange="changeShapeType(this.value)" class="input-dark bg-indigo-900/10 border-indigo-500/20">
+                <option value="cuboid">Hình hộp chữ nhật</option>
+                <option value="cube">Hình lập phương</option>
+            </select>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-2 pt-1">
+            <div class="space-y-1">
+                <label class="text-[8px] text-gray-500 block">Dài (W)</label>
+                <input type="number" id="dim-w" value="6" min="1" max="15" step="0.5" onchange="updateDimensions()" class="input-dark text-center py-1">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[8px] text-gray-500 block">Rộng (D)</label>
+                <input type="number" id="dim-d" value="4" min="1" max="15" step="0.5" onchange="updateDimensions()" class="input-dark text-center py-1">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[8px] text-gray-500 block">Cao (H)</label>
+                <input type="number" id="dim-h" value="4" min="1" max="15" step="0.5" onchange="updateDimensions()" class="input-dark text-center py-1">
+            </div>
+        </div>
+    </div>
+
+    <!-- Hộp công cụ tùy chỉnh -->
+    <div class="mb-4 space-y-3 border-t border-white/5 pt-3">
+        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Hộp công cụ hiển thị</span>
+        
+        <div class="grid grid-cols-2 gap-2">
+            <button id="btn-edges" onclick="toggleEdges()" class="toggle-btn">Hiện cạnh</button>
+            <button id="btn-vertices" onclick="toggleVertices()" class="toggle-btn">Hiện đỉnh</button>
+            <button id="btn-labels" onclick="toggleLabels()" class="toggle-btn active">Hiện nhãn</button>
+            <button id="btn-grid" onclick="toggleGrid()" class="toggle-btn active">Lưới nền</button>
+            <button id="btn-autorotate" onclick="toggleAutoRotate()" class="toggle-btn col-span-2">Tự động xoay (0.25x)</button>
+        </div>
+
+        <div class="space-y-2 pt-1">
+            <span class="text-[8px] text-gray-500 uppercase font-bold">Chế độ màu sắc</span>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="setColorMode('multi')" id="mode-multi" class="text-[8px] px-2 py-1 rounded bg-white/5 border border-white/10 active">Đa màu</button>
+                <button onclick="setColorMode('single')" id="mode-single" class="text-[8px] px-2 py-1 rounded bg-white/5 border border-white/10">Đơn màu</button>
+                <button onclick="setColorMode('trans')" id="mode-trans" class="text-[8px] px-2 py-1 rounded bg-white/5 border border-white/10">Trong suốt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tốc độ khai triển -->
+    <div class="mb-4 space-y-2 border-t border-white/5 pt-3">
+        <div class="flex justify-between items-center">
+            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Tốc độ chuyển động</span>
+            <span id="speed-value" class="text-[9px] font-mono text-indigo-400">0.8s</span>
+        </div>
+        <input type="range" id="animation-speed" min="100" max="3000" step="100" value="800" oninput="updateSpeed(this.value)" class="range-slider">
+    </div>
+
+    <!-- Cấu trúc gắn kết -->
+    <div id="hierarchy-ui" class="space-y-2 mb-4 border-t border-white/5 pt-3"></div>
+
+    <!-- Hành động chính -->
+    <div class="pt-4 border-t border-white/5 space-y-2">
+        <button id="main-action-btn" onclick="runChainSequence()" class="btn-primary w-full bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 py-2.5 rounded-lg text-[9px] font-bold border border-indigo-500/20 uppercase tracking-widest">
+            Khai triển chuỗi
+        </button>
+        <button onclick="resetHierarchy()" class="w-full bg-white/5 hover:bg-white/10 text-gray-400 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all">Thiết lập lại</button>
+    </div>
+</div>
+
+<div class="fixed bottom-4 left-1/2 -translate-x-1/2 glass-panel px-4 py-2 rounded-full border border-white/10 shadow-lg pointer-events-none text-center">
+    <div id="status-display" class="text-[9px] uppercase tracking-widest text-indigo-400/80 font-bold italic">Học cụ: Trực quan hóa hình học không gian</div>
+</div>
+
+<script>
+let scene, camera, renderer, modelContainer, gridHelper;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+
+let isInteracting = false, isPanning = false, isSpacePressed = false;
+let lastTouchX = 0, lastTouchY = 0;
+let cameraTheta = Math.PI / 4, cameraPhi = Math.PI / 3;   
+let cameraRadius = 25, targetRadius = 25;
+let modelOffset = new THREE.Vector3(0, 0, 0);
+
+const COLORS = [0xec4899, 0x10b981, 0x3b82f6, 0x8b5cf6, 0xf59e0b, 0x06b6d4];
+const SINGLE_COLOR = 0x6366f1;
+const VERTEX_COLOR = 0xff3333; 
+let shapeType = 'cuboid', size = { w: 6, h: 4, d: 4 };
+
+let meshes = {}, pivots = {}, labelItems = [], vertexMarkers = [], edgeGroup = [];
+let hierarchy = { front: 'bottom', right: 'bottom', back: 'bottom', left: 'bottom', top: 'back' };
+const OPPOSITE_MAP = { 'front': 'back', 'back': 'front', 'left': 'right', 'right': 'left' };
+let state = { front: false, right: false, back: false, left: false, top: false };
+
+let animationDuration = 800, isAnimating = false;
+let colorMode = 'multi'; 
+let showLabels = true, showEdges = false, showVertices = false;
+let autoRotate = false;
+const rotationSpeed = 0.005; 
+
+function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+    updateCameraPosition();
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.5);
+    dl.position.set(15, 30, 20);
+    scene.add(dl);
+
+    gridHelper = new THREE.GridHelper(60, 30, 0x333333, 0x1a1a1a);
+    gridHelper.position.y = -0.01;
+    scene.add(gridHelper);
+
+    modelContainer = new THREE.Group();
+    scene.add(modelContainer);
+
+    window.addEventListener('keydown', (e) => { if (e.code === 'Space') isSpacePressed = true; });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space') { isSpacePressed = false; isPanning = false; } });
+    window.addEventListener('resize', onResize);
+    window.addEventListener('mousedown', (e) => startInteraction(e.clientX, e.clientY, e));
+    window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', endInteraction);
+    window.addEventListener('wheel', (e) => { 
+        targetRadius = Math.max(10, Math.min(70, targetRadius + e.deltaY * 0.02)); 
+        cameraRadius = targetRadius; 
+        updateCameraPosition(); 
+    }, { passive: true });
+
+    buildModel();
+    renderUI();
+    updateButtonState();
+    animate();
+}
+
+function updateSpeed(val) {
+    animationDuration = parseInt(val);
+    document.getElementById('speed-value').innerText = (animationDuration / 1000).toFixed(1) + 's';
+}
+
+function createLabelTexture(text) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath(); ctx.arc(64, 64, 50, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 70px Inter, Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, 64, 64);
+    return new THREE.CanvasTexture(canvas);
+}
+
+function buildModel() {
+    while(modelContainer.children.length > 0) modelContainer.remove(modelContainer.children[0]);
+    meshes = {}; pivots = {}; labelItems = []; vertexMarkers = []; edgeGroup = [];
+    
+    const midH = size.h / 2;
+    const faceDefs = [
+        { id: 'bottom', w: size.w, h: size.d, c: COLORS[5], t: "6", pos: [0, 0, 0], rot: [-Math.PI/2, 0, 0] },
+        { id: 'front',  w: size.w, h: size.h, c: COLORS[0], t: "1", pos: [0, midH, size.d/2], rot: [0, 0, 0] },
+        { id: 'right',  w: size.d, h: size.h, c: COLORS[1], t: "2", pos: [size.w/2, midH, 0], rot: [0, Math.PI/2, 0] },
+        { id: 'back',   w: size.w, h: size.h, c: COLORS[2], t: "3", pos: [0, midH, -size.d/2], rot: [0, Math.PI, 0] },
+        { id: 'left',   w: size.d, h: size.h, c: COLORS[3], t: "4", pos: [-size.w/2, midH, 0], rot: [0, -Math.PI/2, 0] },
+        { id: 'top',    w: size.w, h: size.d, c: COLORS[4], t: "5", pos: [0, size.h, 0], rot: [-Math.PI/2, 0, 0] }
+    ];
+
+    faceDefs.forEach(d => {
+        let faceColor = d.c;
+        let opacity = 1.0;
+        let transparent = false;
+
+        if (colorMode === 'single') faceColor = SINGLE_COLOR;
+        if (colorMode === 'trans') { opacity = 0.3; transparent = true; }
+
+        const mesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(d.w, d.h), 
+            new THREE.MeshPhongMaterial({ color: faceColor, side: THREE.DoubleSide, transparent: transparent, opacity: opacity })
+        );
+        mesh.position.set(...d.pos); mesh.rotation.set(...d.rot); 
+        mesh.userData = { id: d.id };
+        
+        // Nhãn dán
+        const labelGeom = new THREE.PlaneGeometry(1.2, 1.2);
+        const labelMat = new THREE.MeshBasicMaterial({ map: createLabelTexture(d.t), transparent: true, side: THREE.DoubleSide });
+        const label = new THREE.Mesh(labelGeom, labelMat);
+        label.position.z = 0.05; 
+        label.visible = showLabels;
+        mesh.add(label);
+        labelItems.push({ mesh: label, faceId: d.id });
+
+        // Cạnh (Sử dụng EdgesGeometry với thresholdAngle cao để loại bỏ đường chéo)
+        const edgeGeom = new THREE.EdgesGeometry(mesh.geometry, 1); 
+        const wireframe = new THREE.LineSegments(
+            edgeGeom,
+            new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 })
+        );
+        wireframe.visible = showEdges;
+        mesh.add(wireframe);
+        edgeGroup.push(wireframe);
+
+        // Đỉnh
+        const positions = mesh.geometry.attributes.position.array;
+        for (let i = 0; i < positions.length; i += 3) {
+            const sphere = new THREE.Mesh(
+                new THREE.SphereGeometry(0.18, 16, 16),
+                new THREE.MeshBasicMaterial({ color: VERTEX_COLOR })
+            );
+            sphere.position.set(positions[i], positions[i+1], positions[i+2] + 0.05);
+            sphere.visible = showVertices;
+            mesh.add(sphere);
+            vertexMarkers.push(sphere);
+        }
+
+        meshes[d.id] = mesh; 
+        modelContainer.add(mesh);
+    });
+
+    modelContainer.updateMatrixWorld(true);
+    getSortedHierarchy().filter(id => id !== 'bottom').forEach(id => setupHinge(id, hierarchy[id]));
+}
+
+function setupHinge(childId, parentId) {
+    const child = meshes[childId], parent = meshes[parentId];
+    const common = findSharedEdge(child, parent);
+    if (!common) return;
+    const pivot = new THREE.Group();
+    parent.add(pivot);
+    const localPoint = common.midpoint.clone();
+    parent.worldToLocal(localPoint);
+    pivot.position.copy(localPoint);
+    pivot.updateMatrixWorld();
+    const invQ = pivot.getWorldQuaternion(new THREE.Quaternion()).invert();
+    const localAxis = common.edgeVector.clone().applyQuaternion(invQ).normalize();
+    pivot.attach(child);
+    pivots[childId] = pivot;
+    pivot.userData = { axis: localAxis, currentAngle: 0, id: childId };
+}
+
+function findSharedEdge(meshA, meshB) {
+    const vA = getWorldVertices(meshA), vB = getWorldVertices(meshB);
+    let commonPoints = [];
+    vA.forEach(pa => { vB.forEach(pb => { if (pa.distanceTo(pb) < 0.2) if (!commonPoints.some(p => p.distanceTo(pa) < 0.05)) commonPoints.push(pa); }); });
+    if (commonPoints.length < 2) return null;
+    return { midpoint: commonPoints[0].clone().add(commonPoints[1]).multiplyScalar(0.5), edgeVector: commonPoints[1].clone().sub(commonPoints[0]).normalize() };
+}
+
+function getWorldVertices(mesh) {
+    const pos = mesh.geometry.attributes.position, verts = [];
+    mesh.updateMatrixWorld(true);
+    for(let i=0; i<4; i++) verts.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld));
+    return verts;
+}
+
+function toggleEdges() {
+    showEdges = !showEdges;
+    edgeGroup.forEach(e => e.visible = showEdges);
+    document.getElementById('btn-edges').classList.toggle('active', showEdges);
+}
+
+function toggleVertices() {
+    showVertices = !showVertices;
+    vertexMarkers.forEach(m => m.visible = showVertices);
+    document.getElementById('btn-vertices').classList.toggle('active', showVertices);
+}
+
+function toggleLabels() {
+    showLabels = !showLabels;
+    labelItems.forEach(item => item.mesh.visible = showLabels);
+    document.getElementById('btn-labels').classList.toggle('active', showLabels);
+}
+
+function toggleGrid() {
+    gridHelper.visible = !gridHelper.visible;
+    document.getElementById('btn-grid').classList.toggle('active', gridHelper.visible);
+}
+
+function toggleAutoRotate() {
+    autoRotate = !autoRotate;
+    document.getElementById('btn-autorotate').classList.toggle('active', autoRotate);
+}
+
+function setColorMode(mode) {
+    colorMode = mode;
+    ['mode-multi', 'mode-single', 'mode-trans'].forEach(id => document.getElementById(id).classList.remove('active', 'bg-indigo-500/20', 'border-indigo-500/50'));
+    const activeBtn = document.getElementById(`mode-${mode}`);
+    activeBtn.classList.add('active', 'bg-indigo-500/20', 'border-indigo-500/50');
+    
+    Object.keys(meshes).forEach(id => {
+        const mesh = meshes[id];
+        let color = COLORS[Object.keys(meshes).indexOf(id)];
+        if (id === 'bottom') color = COLORS[5];
+        if (id === 'top') color = COLORS[4];
+        if (mode === 'single') color = SINGLE_COLOR;
+        
+        mesh.material.color.setHex(color);
+        mesh.material.transparent = (mode === 'trans');
+        mesh.material.opacity = (mode === 'trans' ? 0.3 : 1.0);
+    });
+}
+
+function toggleFace(id) {
+    const pivot = pivots[id]; if (!pivot) return;
+    state[id] = !state[id];
+    const axis = pivot.userData.axis;
+    
+    const childMesh = meshes[id], boxCenter = new THREE.Vector3(0, size.h / 2, 0);
+    const originalQuat = pivot.quaternion.clone();
+    pivot.setRotationFromAxisAngle(axis, 0.1); pivot.updateMatrixWorld(true);
+    const posPlus = new THREE.Vector3(); childMesh.getWorldPosition(posPlus);
+    const distPlus = posPlus.distanceTo(boxCenter);
+    pivot.setRotationFromAxisAngle(axis, -0.1); pivot.updateMatrixWorld(true);
+    const posMinus = new THREE.Vector3(); childMesh.getWorldPosition(posMinus);
+    const distMinus = posMinus.distanceTo(boxCenter);
+    pivot.quaternion.copy(originalQuat); pivot.updateMatrixWorld(true);
+    
+    const targetAngle = state[id] ? (Math.PI / 2) * (distPlus > distMinus ? 1 : -1) : 0;
+    const startAngle = pivot.userData.currentAngle, delta = targetAngle - startAngle;
+
+    return new TWEEN.Tween({ t: 0 }).to({ t: 1 }, animationDuration).easing(TWEEN.Easing.Cubic.InOut).onUpdate((obj) => {
+        const angle = startAngle + (delta * obj.t);
+        pivot.setRotationFromAxisAngle(axis, angle);
+        if (obj.t === 1) pivot.userData.currentAngle = angle;
+    });
+}
+
+function updateAdaptiveLabels() {
+    if (!showLabels) return;
+    const cameraUpWorld = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    labelItems.forEach(item => {
+        const label = item.mesh;
+        const face = meshes[item.faceId];
+        const faceWorldQuat = face.getWorldQuaternion(new THREE.Quaternion());
+        const planeNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(faceWorldQuat);
+        const toCam = new THREE.Vector3().subVectors(camera.position, face.getWorldPosition(new THREE.Vector3())).normalize();
+        const isFacingAway = planeNormal.dot(toCam) < 0;
+
+        const faceInvQuat = faceWorldQuat.clone().invert();
+        const localUp = cameraUpWorld.clone().applyQuaternion(faceInvQuat);
+        let angle = Math.atan2(localUp.x, localUp.y);
+        
+        if (isFacingAway) {
+            label.scale.set(-1, 1, 1);
+            label.rotation.z = angle;
+        } else {
+            label.scale.set(1, 1, 1);
+            label.rotation.z = -angle;
+        }
+        label.position.z = isFacingAway ? -0.06 : 0.06;
+    });
+}
+
+async function runChainSequence() {
+    if (isAnimating) return;
+    isAnimating = true;
+    const anyClosed = Object.keys(pivots).some(k => !state[k]);
+    const sorted = getSortedHierarchy();
+    const levels = {};
+    sorted.forEach(id => {
+        let depth = 0, curr = id;
+        while(curr !== 'bottom' && curr !== undefined) { curr = hierarchy[curr]; depth++; }
+        if(!levels[depth]) levels[depth] = [];
+        levels[depth].push(id);
+    });
+    const depths = Object.keys(levels).sort((a,b) => anyClosed ? a-b : b-a);
+    for(const d of depths) {
+        const jobs = levels[d].map(id => {
+            if(id === 'bottom') return null;
+            if(anyClosed ? !state[id] : state[id]) return new Promise(res => { 
+                const t = toggleFace(id); if(t) t.onComplete(res).start(); else res(); 
+            });
+            return null;
+        }).filter(j => j !== null);
+        if(jobs.length > 0) await Promise.all(jobs);
+    }
+    updateButtonState();
+    isAnimating = false;
+}
+
+function getSortedHierarchy() {
+    const res = ['bottom'], q = ['bottom'], v = new Set(['bottom']);
+    while(q.length > 0) {
+        const c = q.shift();
+        Object.keys(hierarchy).forEach(child => { if (hierarchy[child] === c && !v.has(child)) { v.add(child); res.push(child); q.push(child); } });
+    }
+    return res;
+}
+
+function renderUI() {
+    const container = document.getElementById('hierarchy-ui');
+    container.innerHTML = '';
+    const items = [
+        { id: 'top', label: 'Mặt Nắp (5)' }, 
+        { id: 'front', label: 'Mặt Trước (1)' }, 
+        { id: 'right', label: 'Mặt Phải (2)' }, 
+        { id: 'back', label: 'Mặt Sau (3)' }, 
+        { id: 'left', label: 'Mặt Trái (4)' }
+    ];
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "flex flex-col bg-white/5 p-2 rounded-md border border-white/5 space-y-1";
+        const availableParents = items.filter(o => o.id !== item.id && OPPOSITE_MAP[item.id] !== o.id);
+        div.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">${item.label}</span>
+                <span class="text-[8px] text-indigo-400 italic">Gắn vào:</span>
+            </div>
+            <select onchange="changeParent('${item.id}', this.value)" class="input-dark mt-1">
+                <option value="bottom" ${hierarchy[item.id]==='bottom'?'selected':''}>Mặt Đáy (6)</option>
+                ${availableParents.map(o => `<option value="${o.id}" ${hierarchy[item.id]===o.id?'selected':''}>${o.label}</option>`).join('')}
+            </select>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function changeParent(c, p) {
+    if (isLoop(c, p)) return;
+    hierarchy[c] = p; resetStates(); buildModel(); renderUI();
+}
+
+function isLoop(c, p) {
+    let cur = p; while(cur !== 'bottom' && cur !== undefined) { if (cur === c) return true; cur = hierarchy[cur]; }
+    return false;
+}
+
+function resetHierarchy() {
+    hierarchy = { front: 'bottom', right: 'bottom', back: 'bottom', left: 'bottom', top: 'back' };
+    resetStates(); modelOffset.set(0, 0, 0); modelContainer.position.set(0, 0, 0);
+    buildModel(); renderUI();
+}
+
+function updateDimensions() {
+    const w = parseFloat(document.getElementById('dim-w').value) || 1;
+    const d = parseFloat(document.getElementById('dim-d').value) || 1;
+    const h = parseFloat(document.getElementById('dim-h').value) || 1;
+    size = { w, h, d };
+    if (shapeType === 'cube') {
+        document.getElementById('dim-d').value = w; document.getElementById('dim-h').value = w;
+        size = { w, h: w, d: w };
+    }
+    resetStates(); buildModel();
+}
+
+function changeShapeType(type) {
+    shapeType = type;
+    if (type === 'cube') {
+        document.getElementById('dim-d').disabled = document.getElementById('dim-h').disabled = true;
+        const currentW = parseFloat(document.getElementById('dim-w').value);
+        size = { w: currentW, h: currentW, d: currentW };
+    } else {
+        document.getElementById('dim-d').disabled = document.getElementById('dim-h').disabled = false;
+        size = { w: parseFloat(document.getElementById('dim-w').value), h: parseFloat(document.getElementById('dim-h').value), d: parseFloat(document.getElementById('dim-d').value) };
+    }
+    resetStates(); buildModel();
+}
+
+function updateButtonState() {
+    const btn = document.getElementById('main-action-btn');
+    const anyOpen = Object.values(state).some(v => v === true);
+    if (anyOpen) {
+        btn.innerText = "Gấp hộp lại";
+        btn.classList.replace('bg-indigo-600/30', 'bg-emerald-600/30');
+    } else {
+        btn.innerText = "Khai triển chuỗi";
+        btn.classList.replace('bg-emerald-600/30', 'bg-indigo-600/30');
+    }
+}
+
+function startInteraction(x, y, event) {
+    if (event.target.closest('.glass-panel')) return;
+    lastTouchX = x; lastTouchY = y;
+    if (isSpacePressed) { isPanning = true; } else {
+        isInteracting = true;
+        mouse.x = (x / window.innerWidth) * 2 - 1; mouse.y = -(y / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(Object.values(meshes));
+        if (hits.length > 0) {
+            const id = hits[0].object.userData.id;
+            if (id !== 'bottom') { const t = toggleFace(id); if(t) t.onComplete(() => updateButtonState()).start(); }
+        }
+    }
+}
+
+function handleMove(x, y) {
+    const dx = x - lastTouchX, dy = y - lastTouchY;
+    if (isPanning) {
+        const factor = cameraRadius * 0.0015;
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1);
+        modelOffset.add(right.multiplyScalar(-dx * factor).add(up.multiplyScalar(dy * factor)));
+        modelContainer.position.copy(modelOffset);
+    } else if (isInteracting) {
+        cameraTheta -= dx * 0.007; cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraPhi - dy * 0.007));
+        updateCameraPosition();
+    }
+    lastTouchX = x; lastTouchY = y;
+}
+
+function endInteraction() { isInteracting = isPanning = false; }
+
+function updateCameraPosition() {
+    camera.position.x = cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+    camera.position.y = cameraRadius * Math.cos(cameraPhi);
+    camera.position.z = cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+    camera.lookAt(modelOffset.x, modelOffset.y + size.h/2, modelOffset.z);
+}
+
+function resetStates() { Object.keys(state).forEach(k => state[k] = false); updateButtonState(); }
+function onResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+
+function animate() { 
+    requestAnimationFrame(animate); 
+    TWEEN.update(); 
+    
+    if (autoRotate && !isInteracting && !isPanning) {
+        cameraTheta += rotationSpeed;
+        updateCameraPosition();
+    }
+    
+    updateAdaptiveLabels(); 
+    renderer.render(scene, camera); 
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

@@ -225,3 +225,66 @@ export async function saveAdminSettings(settings) {
   });
   return data.settings;
 }
+
+export async function uploadAdminAsset({ filename, fileData, mimeType }) {
+  return apiFetch('/api/admin/upload', {
+    method: 'POST',
+    body: JSON.stringify({ filename, fileData, mimeType })
+  });
+}
+
+export async function analyzeExerciseImage({ imageData, mimeType, filename, promptInstruction }) {
+  return apiFetch('/api/admin/analyze-exercise-image', {
+    method: 'POST',
+    body: JSON.stringify({ imageData, mimeType, filename, promptInstruction })
+  });
+}
+
+export async function fetchLessonMaterialByUnit(unitId) {
+  try {
+    const data = await apiFetch(`/api/materials/unit?unitId=${encodeURIComponent(unitId)}`);
+    return data.material || null;
+  } catch (err) {
+    console.warn('[FetchLessonMaterialByUnit Error]:', err.message);
+    return null;
+  }
+}
+
+export async function generateVocabWithAi({ input, instruction }) {
+  return apiFetch('/api/admin/generate-vocab', {
+    method: 'POST',
+    body: JSON.stringify({ input, instruction })
+  });
+}
+
+export async function generateStructureWithAi({ prompt, unitId }) {
+  return apiFetch('/api/admin/generate-structure', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, unitId })
+  });
+}
+
+export async function fetchPageLayout(pageId, mode = 'published') {
+  try {
+    const data = await apiFetch(`/api/layouts?pageId=${encodeURIComponent(pageId)}&mode=${encodeURIComponent(mode)}`);
+    return data.layout || null;
+  } catch (err) {
+    console.warn('[FetchPageLayout Error]:', err.message);
+    return null;
+  }
+}
+
+export async function savePageLayout({ pageId, status = 'published', layers = {}, deviceBreakpoints = {} }) {
+  return apiFetch('/api/admin/layouts', {
+    method: 'POST',
+    body: JSON.stringify({ pageId, status, layers, deviceBreakpoints })
+  });
+}
+
+export async function resetPageLayout(pageId) {
+  return apiFetch('/api/admin/layouts/reset', {
+    method: 'POST',
+    body: JSON.stringify({ pageId })
+  });
+}
+

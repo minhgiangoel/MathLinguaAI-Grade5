@@ -75,14 +75,15 @@ export const ASSET_MANIFEST = {
       aliasRoute: 'topics/ratio-percentage',
       titleEn: 'Ratio and Percentage',
       titleVi: 'Tỉ số và tỉ số phần trăm',
-      background: null, // Chapter-3-bg.png was removed from repo; using vector fallback
+      background: '/assets/topics-library/ratio-percentage/Chapter-3-bg.png',
       fallbackSvg: '/assets/svg/chapter-3-ratio.svg',
+      backButton: '/assets/topics-library/ratio-percentage/Back-to-Button.png',
       units: [
-        { id: 'ratio', titleEn: 'Ratio', titleVi: 'Tỉ số' },
-        { id: 'word-problems-ratio', titleEn: 'Word Problems about Ratio', titleVi: 'Bài toán về tỉ số' },
-        { id: 'percentage', titleEn: 'Percentage', titleVi: 'Tỉ số phần trăm' },
-        { id: 'percentage-of-number', titleEn: 'Percentage of a Number', titleVi: 'Tìm tỉ số phần trăm của một số' },
-        { id: 'map-scale', titleEn: 'Map Scale', titleVi: 'Tỉ lệ bản đồ', image: '/assets/topics-library/ratio-percentage/map-scale-button.png' }
+        { id: 'btn-c3-ratio', unitKey: 'ratio', titleEn: 'Ratio', titleVi: 'Tỉ số', image: '/assets/topics-library/ratio-percentage/ratio-button.png', alt: 'Bài 1: Tỉ số / Ratio' },
+        { id: 'btn-c3-word-ratio', unitKey: 'word-problems-ratio', titleEn: 'Word Problems about Ratio', titleVi: 'Bài toán về tỉ số', image: '/assets/topics-library/ratio-percentage/word-ratio-button.png', alt: 'Bài 2: Bài toán về tỉ số / Word Problems about Ratio' },
+        { id: 'btn-c3-percentage', unitKey: 'percentage', titleEn: 'Percentage', titleVi: 'Tỉ số phần trăm', image: '/assets/topics-library/ratio-percentage/percent-button.png', alt: 'Bài 3: Tỉ số phần trăm / Percentage' },
+        { id: 'btn-c3-percentage-of-number', unitKey: 'percentage-of-number', titleEn: 'Percentage of a Number', titleVi: 'Tìm giá trị phần trăm của một số', image: '/assets/topics-library/ratio-percentage/percent-number-button.png', alt: 'Bài 4: Tìm giá trị phần trăm của một số / Percentage of a Number' },
+        { id: 'btn-c3-map-scale', unitKey: 'map-scale', titleEn: 'Map Scale', titleVi: 'Tỉ lệ bản đồ', image: '/assets/topics-library/ratio-percentage/map-scale-button.png', alt: 'Bài 5: Tỉ lệ bản đồ / Map Scale' }
       ]
     },
     geometryMeasurement: {
@@ -115,10 +116,48 @@ export const ASSET_MANIFEST = {
     background: '/assets/math-lab/Math-Lab-bg.png',
     fallbackSvg: '/assets/svg/math-lab.svg',
     games: [
-      { id: 'shapes', titleEn: '3D Shape Studio', titleVi: 'Xưởng hình khối 3D' },
-      { id: 'mixed', titleEn: 'Mixed Number Adventure', titleVi: 'Phiêu lưu cùng hỗn số' },
-      { id: 'mystery', titleEn: 'Mystery Pieces / Math Puzzle', titleVi: 'Mảnh ghép bí ẩn' },
-      { id: 'challenge', titleEn: 'English Math Challenge', titleVi: 'Thử thách Toán tiếng Anh' }
+      {
+        id: 'ml-game-shapes',
+        gameKey: 'shapes',
+        titleEn: '3D Shape Studio',
+        titleVi: 'Xưởng hình khối 3D',
+        image: '/assets/math-lab/3D-shape-game.png'
+      },
+      {
+        id: 'ml-game-mixed',
+        gameKey: 'mixed',
+        titleEn: 'Mixed Number Adventure',
+        titleVi: 'Phiêu lưu cùng hỗn số',
+        image: '/assets/math-lab/mixed-number-game.png'
+      },
+      {
+        id: 'ml-game-pieces',
+        gameKey: 'mystery',
+        titleEn: 'Mystery Pieces',
+        titleVi: 'Mảnh ghép bí ẩn',
+        image: '/assets/math-lab/pieces-game.png'
+      },
+      {
+        id: 'ml-game-candy',
+        gameKey: 'candy',
+        titleEn: 'Candy Stacker',
+        titleVi: 'Xếp kẹo khối lượng',
+        image: '/assets/math-lab/candy-game.png'
+      },
+      {
+        id: 'ml-game-dragdrop',
+        gameKey: 'dragdrop',
+        titleEn: 'Drag and Drop',
+        titleVi: 'Kéo thả đúng chỗ',
+        image: '/assets/math-lab/drag-drop-game.png'
+      },
+      {
+        id: 'ml-game-ants',
+        gameKey: 'ants',
+        titleEn: 'Ants Food Quest',
+        titleVi: 'Kiến tha mồi',
+        image: '/assets/math-lab/ants-game.png'
+      }
     ]
   },
   mathBuddy: {

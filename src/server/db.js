@@ -14,7 +14,8 @@ function ensureDbFile() {
       users: [],
       sessions: [],
       progress: [],
-      learningMaterials: []
+      learningMaterials: [],
+      layouts: []
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
   }
@@ -24,11 +25,14 @@ function readDb() {
   ensureDbFile();
   try {
     const raw = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed.layouts) parsed.layouts = [];
+    if (!parsed.learningEvents) parsed.learningEvents = [];
+    return parsed;
   } catch (err) {
     console.error('Failed reading DB file, recreating:', err);
     ensureDbFile();
-    return { users: [], sessions: [], progress: [], learningMaterials: [] };
+    return { users: [], sessions: [], progress: [], learningMaterials: [], layouts: [], learningEvents: [] };
   }
 }
 
@@ -91,11 +95,9 @@ export function verifyAdminCredentials(inputPassword) {
   const admin = initAdminAccount();
   const cleanInput = String(inputPassword || '').trim();
 
-  // 1. Check against current DB hash
   if (verifyPassword(cleanInput, admin.passwordHash, admin.passwordSalt)) {
     return true;
   }
-  // 2. Check against process.env.ADMIN_PASSWORD
   if (process.env.ADMIN_PASSWORD && cleanInput === process.env.ADMIN_PASSWORD.trim()) {
     const { hash, salt } = hashPassword(cleanInput);
     const db = readDb();
@@ -108,7 +110,6 @@ export function verifyAdminCredentials(inputPassword) {
     }
     return true;
   }
-  // 3. Check against initial default password
   const initialPwd = (process.env.ADMIN_INITIAL_PASSWORD || 'MathLingua@Admin2026').trim();
   if (cleanInput === initialPwd) {
     const { hash, salt } = hashPassword(cleanInput);
@@ -124,7 +125,6 @@ export function verifyAdminCredentials(inputPassword) {
   }
   return false;
 }
-
 
 export const dbService = {
   // User operations
@@ -151,7 +151,7 @@ export const dbService = {
       id: 'user_' + crypto.randomUUID().slice(0, 10),
       username: clean,
       displayName: displayName && displayName.trim() ? displayName.trim() : `Học sinh ${clean}`,
-      role: role === 'admin' ? 'student' : role, // Prevent self-promoting to admin
+      role: role === 'admin' ? 'student' : role,
       grade: grade || 'Grade 5',
       classId: classId || '5A1',
       avatarUrl: avatarUrl || 'astronaut-1',
@@ -193,7 +193,7 @@ export const dbService = {
       token,
       userId,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     };
     db.sessions.push(session);
     writeDb(db);
@@ -218,7 +218,74 @@ export const dbService = {
     writeDb(db);
   },
 
-  // Learning Progress operations
+  // Standardized Learning Event operations (Unified Student Learning Analytics)
+  saveLearningEvent(userId, event) {
+    const db = readDb();
+    if (!db.learningEvents) db.learningEvents = [];
+
+    const eventId = event.eventId || `evt_${userId}_${Date.now()}_${crypto.randomUUID().slice(0, 6)}`;
+
+    // Idempotency check: avoid duplicate event inserts
+    const existing = db.learningEvents.find(e => e.eventId === eventId);
+    if (existing) {
+      return existing;
+    }
+
+    const now = new Date().toISOString();
+    const fullEvent = {
+      eventId,
+      schemaVersion: '1.0',
+      studentId: userId,
+      topicId: event.topicId || 'general',
+      lessonId: event.lessonId || event.activityId || 'general',
+      activityId: event.activityId || event.lessonId || 'general',
+      activityTitleEn: event.activityTitleEn || event.titleEn || 'Learning Activity',
+      activityTitleVi: event.activityTitleVi || event.titleVi || 'Hoạt động học tập',
+      sourceModule: event.sourceModule || 'lesson', // lesson | MathLab | MathBuddy | LanguagePractice
+      learningObjectiveIds: Array.isArray(event.learningObjectiveIds) ? event.learningObjectiveIds : [],
+      skillEvidence: event.skillEvidence || {
+        listening: { assessed: false, score: null, reliable: false },
+        speaking: { assessed: false, score: null, reliable: false },
+        reading: { assessed: false, score: null, reliable: false },
+        writing: { assessed: false, score: null, reliable: false }
+      },
+      score: typeof event.score === 'number' ? Math.max(0, Math.min(100, event.score)) : 0,
+      maxScore: event.maxScore || 100,
+      attemptNumber: event.attemptNumber || 1,
+      hintsUsed: event.hintsUsed || 0,
+      completionStatus: event.completionStatus || (event.score >= 70 ? 'completed' : 'in_progress'),
+      assessedAt: event.assessedAt || now,
+      assessmentMethod: event.assessmentMethod || 'quiz_response',
+      confidence: typeof event.confidence === 'number' ? event.confidence : 1.0,
+      metadata: event.metadata || {}
+    };
+
+    db.learningEvents.push(fullEvent);
+
+    // Also update legacy summary progress table for backward compatibility
+    this.saveProgress(userId, {
+      topicId: fullEvent.topicId,
+      unitId: fullEvent.lessonId,
+      titleEn: fullEvent.activityTitleEn,
+      titleVi: fullEvent.activityTitleVi,
+      score: fullEvent.score,
+      isCorrect: fullEvent.score >= 70,
+      status: fullEvent.completionStatus,
+      skills: fullEvent.learningObjectiveIds
+    });
+
+    writeDb(db);
+    return fullEvent;
+  },
+
+  getLearningEventsByUser(userId) {
+    const db = readDb();
+    return (db.learningEvents || [])
+      .filter(e => e.studentId === userId)
+      .sort((a, b) => new Date(b.assessedAt) - new Date(a.assessedAt));
+  },
+
+  // Legacy Progress operations
   saveProgress(userId, { topicId, unitId, titleEn, titleVi, score, isCorrect, lastChoice, status, skills, vocabPracticed }) {
     const db = readDb();
     const progressId = `${userId}_${topicId}_${unitId}`;
@@ -298,9 +365,10 @@ export const dbService = {
         summary: summary || '',
         imageUrl: imageUrl || '',
         audioUrl: audioUrl || '',
-        explore: explore || '',
+        explore: explore || null,
         vocab: Array.isArray(vocab) ? vocab : [],
-        structure: structure || '',
+        structure: structure || null,
+        structures: Array.isArray(structures) ? structures : (Array.isArray(structure) ? structure : null),
         practice: practice || null,
         question: question || null,
         choices: Array.isArray(choices) ? choices : null,
@@ -324,6 +392,7 @@ export const dbService = {
       if (explore !== undefined) mat.explore = explore;
       if (vocab !== undefined) mat.vocab = vocab;
       if (structure !== undefined) mat.structure = structure;
+      if (structures !== undefined) mat.structures = structures;
       if (practice !== undefined) mat.practice = practice;
       if (question !== undefined) mat.question = question;
       if (choices !== undefined) mat.choices = choices;
@@ -336,6 +405,18 @@ export const dbService = {
 
     writeDb(db);
     return mat;
+  },
+
+  getMaterialByUnit(unitId) {
+    const db = readDb();
+    const mats = (db.learningMaterials || []).filter(m => m.unitId === unitId);
+    return mats.length > 0 ? mats[mats.length - 1] : null;
+  },
+
+  getPublishedMaterialByUnit(unitId) {
+    const db = readDb();
+    const mats = (db.learningMaterials || []).filter(m => m.unitId === unitId && m.status === 'published');
+    return mats.length > 0 ? mats[mats.length - 1] : null;
   },
 
   getAllMaterials() {
@@ -365,5 +446,76 @@ export const dbService = {
     db.settings = { ...(db.settings || {}), ...newSettings };
     writeDb(db);
     return db.settings;
+  },
+
+  // Layout operations (Visual Layout Editor)
+  getLayout(pageId, mode = 'published') {
+    const db = readDb();
+    const cleanId = String(pageId || '').trim().toLowerCase();
+    const layouts = (db.layouts || []).filter(l => l.pageId.toLowerCase() === cleanId);
+    if (!layouts.length) return null;
+
+    if (mode === 'draft') {
+      // Find draft layout first, or fallback to published
+      const draft = layouts.find(l => l.status === 'draft');
+      if (draft) return draft;
+    }
+    // Return published layout, or latest
+    const published = layouts.find(l => l.status === 'published');
+    return published || layouts[layouts.length - 1] || null;
+  },
+
+  saveLayout({ pageId, status = 'published', layers = {}, deviceBreakpoints = {}, authorId = null }) {
+    const db = readDb();
+    const cleanId = String(pageId || '').trim().toLowerCase();
+    const now = new Date().toISOString();
+
+    let existing = (db.layouts || []).find(l => l.pageId.toLowerCase() === cleanId && l.status === status);
+
+    if (!existing) {
+      existing = {
+        id: 'layout_' + crypto.randomUUID().slice(0, 8),
+        pageId: cleanId,
+        status, // 'draft' or 'published'
+        layers,
+        deviceBreakpoints,
+        authorId,
+        createdAt: now,
+        updatedAt: now
+      };
+      db.layouts = db.layouts || [];
+      db.layouts.push(existing);
+    } else {
+      existing.layers = layers;
+      existing.deviceBreakpoints = deviceBreakpoints;
+      existing.updatedAt = now;
+      if (authorId) existing.authorId = authorId;
+    }
+
+    // If publishing, also synchronize the draft copy so they stay consistent
+    if (status === 'published') {
+      const draftCopy = (db.layouts || []).find(l => l.pageId.toLowerCase() === cleanId && l.status === 'draft');
+      if (draftCopy) {
+        draftCopy.layers = layers;
+        draftCopy.deviceBreakpoints = deviceBreakpoints;
+        draftCopy.updatedAt = now;
+      }
+    }
+
+    writeDb(db);
+    return existing;
+  },
+
+  resetLayout(pageId) {
+    const db = readDb();
+    const cleanId = String(pageId || '').trim().toLowerCase();
+    db.layouts = (db.layouts || []).filter(l => l.pageId.toLowerCase() !== cleanId);
+    writeDb(db);
+    return true;
+  },
+
+  getAllLayouts() {
+    const db = readDb();
+    return db.layouts || [];
   }
 };
