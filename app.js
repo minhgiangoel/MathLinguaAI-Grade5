@@ -24,6 +24,7 @@ import { DECIMAL_FRACTIONS_LESSON_DATA } from './src/data/decimalFractionsData.j
 import { renderLessonPlayerContainer } from './src/components/LessonPlayer.js';
 import { VisualLayoutEditor, applySavedPageLayout } from './src/components/VisualLayoutEditor.js';
 import { renderMixedNumbersEmbed } from './src/components/lessons/mixed-numbers/MixedNumbersEmbed.js';
+import { renderDecimalNumberEmbed } from './src/components/lessons/decimal-number/DecimalNumberEmbed.js';
 import { renderMixedNumberAdventureEmbed } from './src/components/math-lab/MixedNumberAdventureEmbed.js';
 import { renderMathBuddyConversation } from './src/components/mathbuddy/MathBuddyPartner.js';
 import { renderMyProgressView } from './src/components/MyProgressView.js';
@@ -187,6 +188,10 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     lesson_decimal_fractions: {
       customRender: true,
       alt: 'Bài học song ngữ: Decimal Fractions / Phân số thập phân'
+    },
+    lesson_decimal_number: {
+      customRender: true,
+      alt: 'Bài học song ngữ: Decimal Numbers / Số thập phân'
     },
     lesson_mixed_numbers: {
       customRender: true,
@@ -471,7 +476,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
   const routeState = {
     home: 'home', topics: 'topics', mathlab: 'mathlab', buddy: 'buddy', progress: 'progress', admin: 'admin',
     chapter1: 'topics', chapter2: 'topics', chapter3: 'topics', chapter4: 'topics',
-    lesson_ha_km2: 'topics', game_3d_shapes: 'mathlab', game_mixed_numbers: 'mathlab'
+    lesson_ha_km2: 'topics', lesson_decimal_number: 'topics', game_3d_shapes: 'mathlab', game_mixed_numbers: 'mathlab'
   };
 
   const root = document.getElementById('app-content');
@@ -538,6 +543,15 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
     'lesson/decimal-fractions': 'lesson_decimal_fractions',
     'lesson-decimal-fractions': 'lesson_decimal_fractions',
     'decimal-fractions': 'lesson_decimal_fractions',
+    'topics/decimal-numbers/decimal-number': 'lesson_decimal_number',
+    'chapter2/decimal-number': 'lesson_decimal_number',
+    'chapter2/decimal-numbers': 'lesson_decimal_number',
+    'lesson/decimal-number': 'lesson_decimal_number',
+    'lesson/decimal-numbers': 'lesson_decimal_number',
+    'lesson-decimal-number': 'lesson_decimal_number',
+    'lesson-decimal-numbers': 'lesson_decimal_number',
+    'lesson_decimal_number': 'lesson_decimal_number',
+    'decimal-number': 'lesson_decimal_number',
     'fraction': 'chapter1',
     'decimal-numbers': 'chapter2',
     'ratio-percentage': 'chapter3',
@@ -3419,6 +3433,10 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
       renderDecimalFractionsLesson();
       return;
     }
+    if (currentRoute === 'lesson_decimal_number') {
+      renderDecimalNumberEmbed(root, navigate);
+      return;
+    }
     if (currentRoute === 'lesson_mixed_numbers') {
       renderMixedNumbersEmbed(root, navigate);
       return;
@@ -3866,7 +3884,11 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
 
         btn.addEventListener('click', () => {
           if (window.activeLayoutEditor && !window.activeLayoutEditor.isStudentPreview) return;
-          openLesson({ en: u.titleEn, vi: u.titleVi, unitKey: u.unitKey });
+          if (u.unitKey === 'decimal-number') {
+            navigate('lesson_decimal_number');
+          } else {
+            openLesson({ en: u.titleEn, vi: u.titleVi, unitKey: u.unitKey });
+          }
         });
 
         grid.appendChild(btn);

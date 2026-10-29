@@ -1,6 +1,6 @@
 {
   "name": "MathLingua AI · Grade 5",
-  "description": "MathLingua AI Grade 5 — bản demo điều hướng website học Toán song ngữ.",
+  "description": "Nền tảng học Toán Tiếng Anh Lớp 5 thông minh với trợ lí AI MathBuddy, Thư viện chủ đề, Math Lab và Đánh giá năng lực.",
   "permissions": [],
   "capabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
