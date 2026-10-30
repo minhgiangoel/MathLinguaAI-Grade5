@@ -2,10 +2,21 @@
  * progressAnalytics.js - Client-Side Unified Learning Analytics & Progress Service
  */
 
-const AUTH_TOKEN_KEY = 'mathlingua_auth_token';
+const AUTH_TOKEN_KEY = 'mathlingua_session_token';
+
+// In-memory transient storage for Guest session events (cleared upon page reload)
+let guestSessionEvents = [];
+
+export function clearGuestSessionEvents() {
+  guestSessionEvents = [];
+}
 
 function getAuthToken() {
-  return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -20,7 +31,7 @@ export async function recordLearningEvent(event) {
     activityId: event.activityId || 'general_activity',
     sourceModule: event.sourceModule || 'topics_library',
     learningObjectiveIds: event.learningObjectiveIds || [event.topicId || 'general'],
-    skillEvidence: event.skillEvidence || {}, // { listening: { score: 80, method: 'audio_comprehension' }, speaking: ... }
+    skillEvidence: event.skillEvidence || {},
     score: typeof event.score === 'number' ? event.score : 0,
     maxScore: typeof event.maxScore === 'number' ? event.maxScore : 100,
     attempts: event.attempts || 1,
@@ -30,12 +41,20 @@ export async function recordLearningEvent(event) {
     confidence: event.confidence || 'medium'
   };
 
+  const token = getAuthToken();
+  
+  // Guest Mode: Keep event strictly in transient JS memory for current session only.
+  // Do NOT write to localStorage or persist to backend server.
+  if (!token) {
+    guestSessionEvents.push(payload);
+    return { success: true, isGuest: true, event: payload };
+  }
+
   try {
-    const token = getAuthToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
 
     const res = await fetch('/api/progress/event', {
       method: 'POST',
@@ -46,15 +65,7 @@ export async function recordLearningEvent(event) {
     const data = await res.json();
     return data;
   } catch (err) {
-    console.warn('[ProgressAnalytics] Event recording offline or failed:', err);
-    // Store in local storage queue if needed
-    try {
-      const localEvents = JSON.parse(localStorage.getItem('mathlingua_pending_events') || '[]');
-      localEvents.push(payload);
-      localStorage.setItem('mathlingua_pending_events', JSON.stringify(localEvents));
-    } catch (e) {
-      // Ignore
-    }
+    console.warn('[ProgressAnalytics] Event recording failed:', err);
     return { success: false, event: payload };
   }
 }
@@ -63,24 +74,38 @@ export async function recordLearningEvent(event) {
  * Fetch All Analytics Data
  */
 export async function fetchAnalyticsData() {
+  const token = getAuthToken();
+
+  // Guest Mode: Do NOT call server or load old localStorage queues.
+  if (!token) {
+    return {
+      success: true,
+      isGuest: true,
+      userId: 'guest_student',
+      userDisplayName: 'Học sinh Khách (Guest)',
+      events: [...guestSessionEvents],
+      legacyProgress: []
+    };
+  }
+
   try {
-    const token = getAuthToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
 
     const res = await fetch('/api/progress/analytics', { headers });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    return data;
+    return { ...data, isGuest: false };
   } catch (err) {
     console.warn('[ProgressAnalytics] Failed to fetch server analytics:', err);
     return {
       success: false,
-      userId: 'guest_student',
-      userDisplayName: 'Học sinh Khách (Guest)',
-      events: JSON.parse(localStorage.getItem('mathlingua_pending_events') || '[]'),
+      isGuest: false,
+      userId: 'authenticated_user',
+      userDisplayName: 'Tài khoản đã đăng nhập',
+      events: [],
       legacyProgress: []
     };
   }

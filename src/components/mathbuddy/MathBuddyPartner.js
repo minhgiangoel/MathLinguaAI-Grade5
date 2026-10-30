@@ -4,6 +4,7 @@
  */
 
 import { recordLearningEvent } from '../../services/progressAnalytics.js';
+import { generateFreeMathBuddyResponse } from '../../services/freeMathBuddyEngine.js';
 
 export function renderMathBuddyConversation(root, navigate, initialTopic = 'Decimal Numbers') {
   root.innerHTML = '';
@@ -71,13 +72,16 @@ export function renderMathBuddyConversation(root, navigate, initialTopic = 'Deci
       <div class="mathbuddy-identity-text">
         <div class="mathbuddy-title-row">
           <h1 class="mathbuddy-title">MathBuddy AI</h1>
-          <span class="mathbuddy-badge">AI Conversation Partner</span>
+          <span class="mathbuddy-badge free-mode" title="Free Chat Mode - Fast, Offline & Free">⚡ Free Chat Mode (Miễn phí)</span>
         </div>
         <p class="mathbuddy-subtitle">Your Personal Math Conversation Partner · Bạn đồng hành hội thoại Toán học</p>
         <p class="mathbuddy-slogan">✨ "Talk, Explore, and Learn Math in English!" ✨</p>
       </div>
     </div>
-    <div class="mathbuddy-header-actions">
+    <div class="mathbuddy-header-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button type="button" class="mathbuddy-btn-newchat" id="btn-mathbuddy-clearchat" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;" title="Clear Chat Stream / Xóa khung trò chuyện">
+        🗑️ Clear Chat
+      </button>
       <button type="button" class="mathbuddy-btn-newchat" id="btn-mathbuddy-newchat" title="Start a New Conversation / Bắt đầu hội thoại mới">
         🔄 New Conversation
       </button>
@@ -168,6 +172,7 @@ export function renderMathBuddyConversation(root, navigate, initialTopic = 'Deci
   // Event Listeners
   const topicSelect = topicWrap.querySelector('#mathbuddy-topic-select');
   const newChatBtn = headerCard.querySelector('#btn-mathbuddy-newchat');
+  const clearChatBtn = headerCard.querySelector('#btn-mathbuddy-clearchat');
   const textInput = inputBar.querySelector('#mathbuddy-text-input');
   const sendBtn = inputBar.querySelector('#btn-mathbuddy-send');
   const micBtn = inputBar.querySelector('#btn-mathbuddy-mic');
@@ -176,6 +181,20 @@ export function renderMathBuddyConversation(root, navigate, initialTopic = 'Deci
     if (isThinking) return;
     currentTopic = e.target.value;
     startNewConversation();
+  });
+
+  clearChatBtn?.addEventListener('click', () => {
+    if (isThinking) return;
+    messagesHistory = [
+      {
+        role: 'mathbuddy',
+        text: `Cleared chat stream! We are on "${currentTopic}". What question would you like to solve? 🤖⚡`,
+        translationVi: `Đã xóa khung trò chuyện! Chúng ta đang ở chủ đề "${currentTopic}". Bạn muốn giải câu hỏi nào?`,
+        quickReplies: [`Ask me a question!`, `Which is bigger 4.5 or 4.35?`, `Explain 1 ha in m²!`],
+        sentenceStarters: [`I want to calculate...`, `Can you explain...`]
+      }
+    ];
+    renderMessages();
   });
 
   newChatBtn.addEventListener('click', () => {
@@ -442,6 +461,8 @@ export function renderMathBuddyConversation(root, navigate, initialTopic = 'Deci
     isThinking = true;
     renderMessages();
 
+    let buddyResponse = null;
+
     try {
       const response = await fetch('/api/mathbuddy/chat', {
         method: 'POST',
@@ -452,6 +473,7 @@ export function renderMathBuddyConversation(root, navigate, initialTopic = 'Deci
           topic: currentTopic,
           mode: currentMode,
           message: userMessageText,
+          useAi: false,
           history: messagesHistory.map(m => ({
             role: m.role,
             text: m.text,
@@ -460,56 +482,56 @@ export function renderMathBuddyConversation(root, navigate, initialTopic = 'Deci
         })
       });
 
-      const data = await response.json();
-      isThinking = false;
-
-      if (data && data.success && data.response) {
-        const r = data.response;
-        messagesHistory.push({
-          role: 'mathbuddy',
-          text: r.text || `Great math question! Let's explore ${currentTopic} together!`,
-          translationVi: r.translationVi || '',
-          quickReplies: r.quickReplies || [`Great! 🚀`, `Let me think!`],
-          sentenceStarters: r.sentenceStarters || [`I think ... because ...`],
-          feedback: r.feedback || null
-        });
-
-        // Record standardized learning event for Speaking & Listening
-        recordLearningEvent({
-          topicId: 'mathlab',
-          activityId: 'mathbuddy_dialogue',
-          sourceModule: 'mathbuddy_ai',
-          learningObjectiveIds: ['mathbuddy_dialogue'],
-          skillEvidence: {
-            speaking: { score: 85, method: 'web_speech_rec' },
-            listening: { score: 90, method: 'audio_comprehension' }
-          },
-          score: 88,
-          maxScore: 100,
-          attempts: 1,
-          completionStatus: 'completed',
-          assessmentMethod: 'web_speech_rec',
-          confidence: 'high'
-        }).catch(e => console.warn('Could not record MathBuddy event:', e));
-      } else {
-        messagesHistory.push({
-          role: 'mathbuddy',
-          isError: true,
-          failedMessage: userMessageText,
-          text: `⚠️ MathBuddy AI is currently unable to process this request. (${data?.message || data?.error || 'Service Error'})`,
-          translationVi: `Hệ thống AI tạm thời không phản hồi. Vui lòng bấm "🔄 Retry / Thử lại" bên dưới.`
-        });
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await response.json().catch(() => null);
+        if (response.ok && data && data.success && data.response) {
+          buddyResponse = data.response;
+        }
       }
     } catch (err) {
-      console.warn('[MathBuddy Fetch Error]:', err);
-      isThinking = false;
+      console.warn('[MathBuddy Local Fallback Active]:', err);
+    }
+
+    // Local client-side engine fallback if server fetch was unreachable or non-JSON
+    if (!buddyResponse) {
+      buddyResponse = generateFreeMathBuddyResponse({
+        topic: currentTopic,
+        mode: currentMode,
+        message: userMessageText,
+        history: messagesHistory
+      });
+    }
+
+    isThinking = false;
+
+    if (buddyResponse) {
       messagesHistory.push({
         role: 'mathbuddy',
-        isError: true,
-        failedMessage: userMessageText,
-        text: `⚠️ Connection Error: Unable to communicate with MathBuddy AI. (${err.message})`,
-        translationVi: `Lỗi kết nối mạng. Bấm "🔄 Retry / Thử lại" để gửi lại.`
+        text: buddyResponse.text || `Great math question! Let's explore ${currentTopic} together!`,
+        translationVi: buddyResponse.translationVi || '',
+        quickReplies: buddyResponse.quickReplies || [`Great! 🚀`, `Let me think!`],
+        sentenceStarters: buddyResponse.sentenceStarters || [`I think ... because ...`],
+        feedback: buddyResponse.feedback || null
       });
+
+      // Record standardized learning event for Speaking & Listening
+      recordLearningEvent({
+        topicId: 'mathlab',
+        activityId: 'mathbuddy_dialogue',
+        sourceModule: 'mathbuddy_ai',
+        learningObjectiveIds: ['mathbuddy_dialogue'],
+        skillEvidence: {
+          speaking: { score: 85, method: 'web_speech_rec' },
+          listening: { score: 90, method: 'audio_comprehension' }
+        },
+        score: 88,
+        maxScore: 100,
+        attempts: 1,
+        completionStatus: 'completed',
+        assessmentMethod: 'web_speech_rec',
+        confidence: 'high'
+      }).catch(e => console.warn('Could not record MathBuddy event:', e));
     }
 
     renderMessages();

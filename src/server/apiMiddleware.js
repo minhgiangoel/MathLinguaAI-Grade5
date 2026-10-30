@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { GoogleGenAI, Type } from '@google/genai';
 import { dbService, verifyPassword, initAdminAccount, verifyAdminCredentials } from './db.js';
+import { generateFreeMathBuddyResponse } from '../services/freeMathBuddyEngine.js';
 
 let cachedFirebaseConfig = null;
 
@@ -78,106 +79,64 @@ export function createApiMiddleware() {
 
     res.setHeader('Content-Type', 'application/json');
 
-    // 1.5. POST /api/mathbuddy/chat - AI MathBuddy Conversation Partner
+    // 1.5. POST /api/mathbuddy/chat - AI & Free MathBuddy Conversation Partner
     if (pathname === '/api/mathbuddy/chat' && req.method === 'POST') {
       try {
         const body = await readJsonBody(req);
-        const { topic = 'Decimal Numbers', mode = 'talk', message = '', history = [] } = body;
+        const { topic = 'Decimal Numbers', mode = 'talk', message = '', history = [], useAi = false } = body;
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        // Default: Free Chat Engine Mode (Offline & Fast)
+        if (!useAi) {
+          const freeResponse = generateFreeMathBuddyResponse({ topic, mode, message, history });
+          res.statusCode = 200;
+          return res.end(JSON.stringify({
+            success: true,
+            engineMode: 'free',
+            response: freeResponse
+          }));
+        }
+
+        // Optional AI Mode (when requested by admin configuration)
+        const getValidApiKey = () => {
+          const keys = [
+            process.env.GEMINI_API_KEY,
+            process.env.API_KEY,
+            process.env.VITE_GEMINI_API_KEY
+          ];
+          for (const k of keys) {
+            if (k && typeof k === 'string') {
+              const clean = k.trim().replace(/^["']|["']$/g, '');
+              if (clean && !clean.startsWith('MY_') && !clean.startsWith('YOUR_') && clean !== 'placeholder') {
+                return clean;
+              }
+            }
+          }
+          return null;
+        };
+
+        const apiKey = getValidApiKey();
 
         if (!apiKey) {
-          res.statusCode = 503;
+          // Fallback to Free Chat Engine if AI Key is missing
+          const freeResponse = generateFreeMathBuddyResponse({ topic, mode, message, history });
+          res.statusCode = 200;
           return res.end(JSON.stringify({
-            success: false,
-            error: 'API_KEY_MISSING',
-            message: 'MathBuddy AI key is not configured.'
+            success: true,
+            engineMode: 'free_fallback',
+            response: freeResponse
           }));
         }
 
         try {
-          const ai = new GoogleGenAI({
-            apiKey: apiKey,
-            httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-          });
+          const ai = new GoogleGenAI({ apiKey });
+          const systemInstruction = `You are MathBuddy 🤖, a friendly Grade 5 Math Conversation Partner.
+Context: Topic "${topic}", Mode "${mode.toUpperCase()}".
+Respond in simple Grade 5 English with Vietnamese translation.
+Return JSON with { "text", "translationVi", "quickReplies", "sentenceStarters", "feedback" }.`;
 
-          const systemInstruction = `You are MathBuddy 🤖, a friendly, enthusiastic, intelligent blue robot and bilingual Math Conversation Partner for Grade 5 elementary students (ages 10-11) on MathLingua AI.
-
-CURRENT CONTEXT:
-- Math Topic: "${topic}"
-- Conversation Mode: "${mode.toUpperCase()}"
-
-PEDAGOGICAL & PERSONALITY ROLE:
-1. You are a REAL, attentive conversation partner. RESPOND DIRECTLY to whatever the student actually said in their latest message.
-   - If student says "Let's calculate!", ask a specific, fun Grade 5 calculation question about ${topic} in ${mode.toUpperCase()} mode!
-   - If student says "Can you give a hint?", give a step-by-step hint for the current problem.
-   - If student says "I don't know" or "Help me", break down the step or give a simpler example.
-   - If student gives an answer or calculation, check if it is mathematically correct! Praise them if correct, or kindly explain the misconception if incorrect.
-   - If student requests a topic change, acknowledge it enthusiastically and start exploring the new topic.
-
-2. GRADE 5 MATH KNOWLEDGE:
-   - Decimal Numbers: Tenths, hundredths, thousandths, place values, comparing (e.g. 4.5 vs 4.35), adding/subtracting decimals, multiplying/dividing by 10, 100, 1000.
-   - Mixed Numbers: Whole + fraction parts (e.g. 2 1/2), converting to/from improper fractions, real-life uses (pizza, recipes, distance).
-   - Geometry: 2D/3D shapes, area of triangles, parallelograms, trapezoids, circumference & area of circles, volume of cubes & rectangular prisms.
-   - Measurement: Area units (m², ha, km²), conversions (1 ha = 10,000 m², 1 km² = 100 ha), national parks, farms, solar fields.
-   - Ratio and Percentage: Ratios (a:b), finding percentage of a quantity (e.g. 25% of 80), percentage increase/decrease.
-   - Fraction: Equivalent fractions, simplifying, decimal fractions (denominators 10, 100, 1000), fraction operations (+, -, ×, ÷).
-
-3. MODE INSTRUCTIONS:
-   - TALK: Ask 1 clear conceptual question at a time. Encourage explaining "Why?" or "How did you get that?".
-   - ROLE-PLAY: Play a fun space character (e.g. Space Canteen Chef for decimals, Space Base Architect for geometry, Rocket Commander for fractions/mixed numbers).
-   - DISCOVER: Math detective mystery! Give step-by-step clues and ask student to deduce the secret code or number.
-   - PLAY TOGETHER: Cooperative team challenge! Solve a multi-step space mission together turn-by-turn.
-
-4. RESPONSE FORMAT:
-   Return JSON with:
-   - "text": MathBuddy's response in simple Grade 5 English (max 3-4 sentences). Ask ONE clear question or give ONE step at a time.
-   - "translationVi": Vietnamese translation/summary.
-   - "quickReplies": 2-3 dynamic, short quick reply options matching the current conversation state.
-   - "sentenceStarters": 2-3 English sentence starters to scaffold the student's reply.
-   - "feedback": (Optional) { "praise": "...", "conceptNote": "..." }
-
-CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, context-aware turn matching what the student typed.`;
-
-          // Clean up history to ensure valid Gemini payload (no consecutive duplicate roles, non-empty text, valid role sequence)
-          const contents = [];
-          if (Array.isArray(history) && history.length > 0) {
-            history.forEach(item => {
-              if (item.isError) return;
-              const text = (item.text || item.content || '').trim();
-              if (!text) return;
-              const role = (item.role === 'student' || item.role === 'user') ? 'user' : 'model';
-
-              if (contents.length > 0 && contents[contents.length - 1].role === role) {
-                contents[contents.length - 1].parts[0].text += `\n${text}`;
-              } else {
-                contents.push({ role, parts: [{ text }] });
-              }
-            });
-          }
-
-          const cleanMsg = (message || '').trim();
-          if (cleanMsg) {
-            if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
-              const lastUserText = contents[contents.length - 1].parts[0].text;
-              if (!lastUserText.includes(cleanMsg)) {
-                contents[contents.length - 1].parts[0].text += `\n${cleanMsg}`;
-              }
-            } else {
-              contents.push({ role: 'user', parts: [{ text: cleanMsg }] });
-            }
-          }
-
-          if (contents.length > 0 && contents[0].role === 'model') {
-            contents.unshift({ role: 'user', parts: [{ text: 'Hello MathBuddy! I am ready to learn math in English.' }] });
-          }
-
-          if (contents.length === 0) {
-            contents.push({ role: 'user', parts: [{ text: cleanMsg || 'Hello MathBuddy!' }] });
-          }
-
-          const response = await ai.models.generateContent({
-            model: 'gemini-3.8-flash',
+          const contents = [{ role: 'user', parts: [{ text: (message || 'Hello MathBuddy!').trim() }] }];
+          const resObj = await ai.models.generateContent({
+            model: 'gemini-3.5-flash',
             contents: contents,
             config: {
               systemInstruction: systemInstruction,
@@ -185,24 +144,13 @@ CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, cont
               responseSchema: {
                 type: Type.OBJECT,
                 properties: {
-                  text: { type: Type.STRING, description: "MathBuddy's response in English" },
-                  translationVi: { type: Type.STRING, description: "Vietnamese translation" },
-                  quickReplies: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                    description: "2-3 dynamic quick reply options"
-                  },
-                  sentenceStarters: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                    description: "2-3 English sentence starters"
-                  },
+                  text: { type: Type.STRING },
+                  translationVi: { type: Type.STRING },
+                  quickReplies: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  sentenceStarters: { type: Type.ARRAY, items: { type: Type.STRING } },
                   feedback: {
                     type: Type.OBJECT,
-                    properties: {
-                      praise: { type: Type.STRING },
-                      conceptNote: { type: Type.STRING }
-                    }
+                    properties: { praise: { type: Type.STRING }, conceptNote: { type: Type.STRING } }
                   }
                 },
                 required: ["text", "translationVi", "quickReplies", "sentenceStarters"]
@@ -210,20 +158,21 @@ CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, cont
             }
           });
 
-          if (response.text) {
-            const buddyResponse = JSON.parse(response.text.trim());
+          if (resObj && resObj.text) {
+            const buddyResponse = JSON.parse(resObj.text.trim());
             res.statusCode = 200;
-            return res.end(JSON.stringify({ success: true, response: buddyResponse }));
+            return res.end(JSON.stringify({ success: true, engineMode: 'ai', response: buddyResponse }));
           } else {
-            throw new Error('Gemini API returned empty response.');
+            throw new Error('Empty Gemini response');
           }
         } catch (genErr) {
-          console.error('[Gemini MathBuddy Error]:', genErr);
-          res.statusCode = 500;
+          console.warn('[MathBuddy AI Fallback to Free Engine]:', genErr.message || genErr);
+          const freeResponse = generateFreeMathBuddyResponse({ topic, mode, message, history });
+          res.statusCode = 200;
           return res.end(JSON.stringify({
-            success: false,
-            error: 'AI_RESPONSE_FAILED',
-            message: genErr.message || 'MathBuddy AI service encountered an error.'
+            success: true,
+            engineMode: 'free_fallback',
+            response: freeResponse
           }));
         }
       } catch (err) {
@@ -389,12 +338,15 @@ CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, cont
     // 8.1. POST /api/progress/event - Record standardized learning event
     if (pathname === '/api/progress/event' && req.method === 'POST') {
       const token = getBearerToken(req);
-      let userId = 'guest_student';
-      if (token) {
-        const sessionData = dbService.findSession(token);
-        if (sessionData && sessionData.user) {
-          userId = sessionData.user.id;
-        }
+      if (!token) {
+        res.statusCode = 200;
+        return res.end(JSON.stringify({ success: true, isGuest: true, message: 'Guest progress not persisted to database' }));
+      }
+
+      const sessionData = dbService.findSession(token);
+      if (!sessionData || !sessionData.user) {
+        res.statusCode = 401;
+        return res.end(JSON.stringify({ error: 'Chưa đăng nhập / Unauthorized' }));
       }
 
       try {
@@ -404,7 +356,7 @@ CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, cont
           return res.end(JSON.stringify({ error: 'Thiếu topicId hoặc activityId' }));
         }
 
-        const savedEvent = dbService.saveLearningEvent(userId, body);
+        const savedEvent = dbService.saveLearningEvent(sessionData.user.id, body);
         res.statusCode = 200;
         return res.end(JSON.stringify({ success: true, event: savedEvent }));
       } catch (err) {
@@ -416,16 +368,33 @@ CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, cont
     // 8.2. GET /api/progress/analytics - Fetch learning events and analytics for student
     if (pathname === '/api/progress/analytics' && req.method === 'GET') {
       const token = getBearerToken(req);
-      let userId = 'guest_student';
-      let userDisplayName = 'Học sinh Khách (Guest)';
-
-      if (token) {
-        const sessionData = dbService.findSession(token);
-        if (sessionData && sessionData.user) {
-          userId = sessionData.user.id;
-          userDisplayName = sessionData.user.displayName || sessionData.user.username;
-        }
+      if (!token) {
+        res.statusCode = 200;
+        return res.end(JSON.stringify({
+          success: true,
+          isGuest: true,
+          userId: 'guest_student',
+          userDisplayName: 'Học sinh Khách (Guest)',
+          events: [],
+          legacyProgress: []
+        }));
       }
+
+      const sessionData = dbService.findSession(token);
+      if (!sessionData || !sessionData.user) {
+        res.statusCode = 200;
+        return res.end(JSON.stringify({
+          success: true,
+          isGuest: true,
+          userId: 'guest_student',
+          userDisplayName: 'Học sinh Khách (Guest)',
+          events: [],
+          legacyProgress: []
+        }));
+      }
+
+      const userId = sessionData.user.id;
+      const userDisplayName = sessionData.user.displayName || sessionData.user.username;
 
       try {
         const events = dbService.getLearningEventsByUser(userId);
@@ -434,6 +403,7 @@ CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, cont
         res.statusCode = 200;
         return res.end(JSON.stringify({
           success: true,
+          isGuest: false,
           userId,
           userDisplayName,
           events,
@@ -445,64 +415,6 @@ CRITICAL: NEVER repeat a generic canned sentence. Always generate a unique, cont
       }
     }
 
-    // 8.1. POST /api/progress/event - Record standardized learning event
-    if (pathname === '/api/progress/event' && req.method === 'POST') {
-      const token = getBearerToken(req);
-      let userId = 'guest_student';
-      if (token) {
-        const sessionData = dbService.findSession(token);
-        if (sessionData && sessionData.user) {
-          userId = sessionData.user.id;
-        }
-      }
-
-      try {
-        const body = await readJsonBody(req);
-        if (!body.topicId && !body.activityId) {
-          res.statusCode = 400;
-          return res.end(JSON.stringify({ error: 'Thiếu topicId hoặc activityId' }));
-        }
-
-        const savedEvent = dbService.saveLearningEvent(userId, body);
-        res.statusCode = 200;
-        return res.end(JSON.stringify({ success: true, event: savedEvent }));
-      } catch (err) {
-        res.statusCode = 500;
-        return res.end(JSON.stringify({ error: err.message }));
-      }
-    }
-
-    // 8.2. GET /api/progress/analytics - Fetch learning events and analytics for student
-    if (pathname === '/api/progress/analytics' && req.method === 'GET') {
-      const token = getBearerToken(req);
-      let userId = 'guest_student';
-      let userDisplayName = 'Học sinh Khách (Guest)';
-
-      if (token) {
-        const sessionData = dbService.findSession(token);
-        if (sessionData && sessionData.user) {
-          userId = sessionData.user.id;
-          userDisplayName = sessionData.user.displayName || sessionData.user.username;
-        }
-      }
-
-      try {
-        const events = dbService.getLearningEventsByUser(userId);
-        const legacyProgress = dbService.getProgressByUser(userId);
-
-        res.statusCode = 200;
-        return res.end(JSON.stringify({
-          success: true,
-          userId,
-          userDisplayName,
-          events,
-          legacyProgress
-        }));
-      } catch (err) {
-        res.statusCode = 500;
-        return res.end(JSON.stringify({ error: err.message }));
-      }
-    }
 
     // 8.5. GET /api/materials/unit?unitId=...
     if (pathname === '/api/materials/unit' && req.method === 'GET') {

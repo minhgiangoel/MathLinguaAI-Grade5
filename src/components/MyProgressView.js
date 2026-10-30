@@ -481,12 +481,129 @@ export async function renderMyProgressView(containerEl, onNavigate) {
 
   // Fetch Real Analytics Data
   const rawData = await fetchAnalyticsData();
-  const processed = processAnalytics(rawData.events || [], rawData.legacyProgress || []);
 
-  // Hide Skeleton, Reveal Dashboard
+  // Hide Skeleton
   const loadingEl = containerEl.querySelector('#progress-loading');
-  const dashboardEl = containerEl.querySelector('#progress-dashboard');
   if (loadingEl) loadingEl.classList.add('hidden');
+
+  // GUEST MODE VIEW (Unauthenticated User)
+  if (rawData.isGuest) {
+    containerEl.innerHTML = `
+      <div class="max-w-4xl mx-auto px-4 py-8 space-y-6 text-slate-100 animate-fadeIn">
+        <!-- Guest Notice Banner -->
+        <div class="relative bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 rounded-3xl p-6 sm:p-8 border border-cyan-500/40 shadow-2xl text-center overflow-hidden">
+          <div class="absolute -top-12 -right-12 w-40 h-40 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="absolute -bottom-12 -left-12 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div class="relative z-10 space-y-4 max-w-xl mx-auto">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/10">
+              🔒
+            </div>
+
+            <div class="space-y-2">
+              <span class="px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Guest Mode · Chế độ Khách
+              </span>
+              <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Hồ Sơ Tiến Bộ (My Progress)
+              </h1>
+              <p class="text-sm sm:text-base text-cyan-200 font-bold leading-relaxed">
+                “Đăng nhập để lưu tiến trình và theo dõi hành trình học tập của bạn.”
+              </p>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
+              Bạn có thể làm bài và luyện tập tự do ở chế độ Khách. Tuy nhiên, kết quả chỉ tồn tại trong phiên làm việc hiện tại và sẽ không được lưu khi tải lại trang.
+            </p>
+
+            <div class="pt-2 flex flex-wrap justify-center gap-3">
+              <button id="btn-guest-login-action" class="py-3 px-6 bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-black text-xs sm:text-sm rounded-xl shadow-xl shadow-indigo-500/30 transition-all flex items-center space-x-2 border border-cyan-400/40 cursor-pointer">
+                <span>🔑 Đăng nhập / Log in</span>
+                <span>➔</span>
+              </button>
+              <button id="btn-guest-explore-action" class="py-3 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700/80 transition-all cursor-pointer">
+                🚀 Khám phá bài học
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty Preview State for Topics & Skills -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Topic Mastery Preview -->
+          <div class="bg-slate-900/80 rounded-2xl p-5 border border-slate-800/90 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
+                <span>🎯</span>
+                <span>Chủ Đề Chương Trình Lớp 5</span>
+              </h3>
+              <span class="text-[10px] text-slate-400 font-semibold">5 Chủ đề</span>
+            </div>
+            <div class="space-y-2 text-xs text-slate-400">
+              <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span>📊 Phân số & Hỗn số</span>
+                <span class="text-[11px] text-amber-300 font-bold">Chưa lưu</span>
+              </div>
+              <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span>🔢 Số thập phân</span>
+                <span class="text-[11px] text-amber-300 font-bold">Chưa lưu</span>
+              </div>
+              <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span>📈 Tỉ số & Phần trăm</span>
+                <span class="text-[11px] text-amber-300 font-bold">Chưa lưu</span>
+              </div>
+              <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span>📐 Hình học & Đo lường</span>
+                <span class="text-[11px] text-amber-300 font-bold">Chưa lưu</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- English Skills Radar Preview -->
+          <div class="bg-slate-900/80 rounded-2xl p-5 border border-slate-800/90 space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
+                  <span>🗣️</span>
+                  <span>Đánh Giá 4 Kỹ Năng Tiếng Anh</span>
+                </h3>
+                <span class="text-[10px] text-purple-300 font-semibold">AI Assistant</span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Đăng nhập tài khoản để nhận phân tích Radar 4 kỹ năng: Nghe hiểu, Nói & Phát âm, Đọc hiểu và Viết Toán Tiếng Anh cùng MathBuddy AI.
+              </p>
+            </div>
+            <div class="p-4 bg-slate-950/80 rounded-xl border border-dashed border-indigo-500/30 text-center space-y-2">
+              <span class="text-2xl">🕸️</span>
+              <div class="text-xs font-bold text-slate-300">Biểu đồ Radar Kỹ năng AI</div>
+              <div class="text-[11px] text-slate-400">Yêu cầu đăng nhập để hiển thị chỉ số thành thạo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    containerEl.querySelector('#btn-guest-login-action')?.addEventListener('click', () => {
+      if (typeof window.openLoginModal === 'function') {
+        window.openLoginModal('login');
+      } else {
+        if (typeof onNavigate === 'function') onNavigate('#login');
+      }
+    });
+
+    containerEl.querySelector('#btn-guest-explore-action')?.addEventListener('click', () => {
+      if (typeof onNavigate === 'function') {
+        onNavigate('#topics');
+      } else {
+        window.location.hash = '#topics';
+      }
+    });
+
+    return;
+  }
+
+  // AUTHENTICATED MODE VIEW
+  const dashboardEl = containerEl.querySelector('#progress-dashboard');
   if (dashboardEl) dashboardEl.classList.remove('hidden');
 
   // Update Student Display & Last Active Metadata

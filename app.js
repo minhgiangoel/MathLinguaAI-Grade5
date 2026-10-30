@@ -31,7 +31,7 @@ import { renderAntsFoodQuestEmbed } from './src/components/math-lab/AntsFoodQues
 import { renderMysteryPiecesEmbed } from './src/components/math-lab/MysteryPiecesEmbed.js';
 import { renderMathBuddyConversation } from './src/components/mathbuddy/MathBuddyPartner.js';
 import { renderMyProgressView } from './src/components/MyProgressView.js';
-import { recordLearningEvent } from './src/services/progressAnalytics.js';
+import { recordLearningEvent, clearGuestSessionEvents } from './src/services/progressAnalytics.js';
 
 (() => {
   const NAV = {
@@ -995,6 +995,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
       currentUser = null;
       currentUserProfile = null;
       isUserMenuOpen = false;
+      clearGuestSessionEvents();
       renderNav();
       if (currentRoute === 'admin') {
         navigate('home');
@@ -4448,6 +4449,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
 
     bindAuthEvents();
   }
+  window.openLoginModal = openLoginModal;
 
   function openProfileModal() {
     if (!currentUserProfile) return;
@@ -4932,8 +4934,19 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
         feedback.innerHTML = `${isCorrect ? '✅ Correct! · Chính xác!' : '💡 Not quite. · Chưa chính xác.'}<div class="modal-note">${q.explanation}</div>`;
       }
 
-      // Save student progress to Firestore
-      if (currentUser) {
+      // Record learning event (in-memory transient for guest, server API for authenticated)
+      recordLearningEvent({
+        topicId: q.topicId || currentRoute,
+        activityId: q.unitId || (q.title || 'quiz').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        sourceModule: 'topics_library',
+        score: isCorrect ? 100 : 0,
+        maxScore: 100,
+        completionStatus: isCorrect ? 'completed' : 'in_progress',
+        assessmentMethod: 'quiz_reading'
+      }).catch(err => console.warn('Could not record quiz event:', err));
+
+      // Save student progress to backend/Firestore ONLY if logged in
+      if (currentUser && getToken()) {
         saveStudentProgress({
           topicId: q.topicId || currentRoute,
           unitId: q.unitId || (q.title || 'quiz').toLowerCase().replace(/[^a-z0-9]/g, '-'),
@@ -5017,6 +5030,7 @@ import { recordLearningEvent } from './src/services/progressAnalytics.js';
   onAuthStateChanged((user) => {
     currentUser = user;
     currentUserProfile = user;
+    clearGuestSessionEvents();
     renderNav();
     if (currentRoute === 'progress' || currentRoute === 'admin') {
       renderPage();

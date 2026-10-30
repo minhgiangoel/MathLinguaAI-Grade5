@@ -8,10 +8,10 @@
       "grade": "Grade 5",
       "classId": "Admin Office",
       "avatarUrl": "admin",
-      "passwordHash": "b277cb088e293dc95c8a5907ae503e9065b85b90fbcc375ba64c5a9d9eb7b18a29507114fbc790380429dabfaf83f08e66988a4fbb46e8580c758da3919f2334",
-      "passwordSalt": "5a2ed748f894a97f13d7cfb0190b3321",
+      "passwordHash": "9daa0e1839907fde83130b18f85e4b5bb604517bb939e5e0ff19d87c13674b66f13e72ec94fc756ecfaf5dbbce7642059ea9d02647b291158818847ac5b27159",
+      "passwordSalt": "564ae6a594c0a5813455197d3e654889",
       "createdAt": "2026-10-21T16:00:00.571Z",
-      "updatedAt": "2026-10-21T17:08:02.915Z"
+      "updatedAt": "2026-10-29T18:53:22.594Z"
     },
     {
       "id": "user_de1560cc-c",
@@ -168,5 +168,136 @@
       "updatedAt": "2026-10-21T16:02:56.509Z"
     }
   ],
-  "layouts": []
+  "layouts": [],
+  "learningEvents": [
+    {
+      "eventId": "evt_guest_student_1793300011363_bb9f7e",
+      "schemaVersion": "1.0",
+      "studentId": "guest_student",
+      "topicId": "chapter1",
+      "lessonId": "general",
+      "activityId": "general",
+      "activityTitleEn": "Learning Activity",
+      "activityTitleVi": "Hoạt động học tập",
+      "sourceModule": "lesson",
+      "learningObjectiveIds": [],
+      "skillEvidence": {
+        "listening": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "speaking": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "reading": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "writing": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        }
+      },
+      "score": 100,
+      "maxScore": 100,
+      "attemptNumber": 1,
+      "hintsUsed": 0,
+      "completionStatus": "completed",
+      "assessedAt": "2026-10-29T18:53:31.363Z",
+      "assessmentMethod": "quiz_response",
+      "confidence": 1,
+      "metadata": {}
+    },
+    {
+      "eventId": "evt_guest_student_1793300021374_1b74a5",
+      "schemaVersion": "1.0",
+      "studentId": "guest_student",
+      "topicId": "chapter1",
+      "lessonId": "general",
+      "activityId": "general",
+      "activityTitleEn": "Learning Activity",
+      "activityTitleVi": "Hoạt động học tập",
+      "sourceModule": "lesson",
+      "learningObjectiveIds": [],
+      "skillEvidence": {
+        "listening": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "speaking": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "reading": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "writing": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        }
+      },
+      "score": 100,
+      "maxScore": 100,
+      "attemptNumber": 1,
+      "hintsUsed": 0,
+      "completionStatus": "completed",
+      "assessedAt": "2026-10-29T18:53:41.374Z",
+      "assessmentMethod": "quiz_response",
+      "confidence": 1,
+      "metadata": {}
+    },
+    {
+      "eventId": "evt_guest_student_1793300041736_0f2de2",
+      "schemaVersion": "1.0",
+      "studentId": "guest_student",
+      "topicId": "chapter1",
+      "lessonId": "general",
+      "activityId": "general",
+      "activityTitleEn": "Learning Activity",
+      "activityTitleVi": "Hoạt động học tập",
+      "sourceModule": "lesson",
+      "learningObjectiveIds": [],
+      "skillEvidence": {
+        "listening": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "speaking": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "reading": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        },
+        "writing": {
+          "assessed": false,
+          "score": null,
+          "reliable": false
+        }
+      },
+      "score": 100,
+      "maxScore": 100,
+      "attemptNumber": 1,
+      "hintsUsed": 0,
+      "completionStatus": "completed",
+      "assessedAt": "2026-10-29T18:54:01.736Z",
+      "assessmentMethod": "quiz_response",
+      "confidence": 1,
+      "metadata": {}
+    }
+  ]
 }
